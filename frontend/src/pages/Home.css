@@ -1,0 +1,34 @@
+/* bottom call to action banner */
+.cta-banner {
+  padding: 80px 24px;
+  background: linear-gradient(135deg, var(--secondary) 0%, #1e293b 100%);
+  color: white;
+  text-align: center;
+}
+
+.cta-container {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.cta-container h2 {
+  font-size: 2.8rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.cta-container p {
+  font-size: 1.15rem;
+  color: #cbd5e1;
+  max-width: 580px;
+}
+
+@media (max-width: 768px) {
+  .cta-container h2 {
+    font-size: 2rem;
+  }
+}

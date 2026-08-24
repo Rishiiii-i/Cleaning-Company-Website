@@ -1,0 +1,71 @@
+.how-it-works {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 80px 24px;
+  box-sizing: border-box;
+}
+
+.steps-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  margin-top: 50px;
+}
+
+.step-card {
+  text-align: center;
+  background-color: var(--surface);
+  padding: 48px 32px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  position: relative;
+  transition: var(--transition);
+}
+
+.step-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(2, 132, 199, 0.15);
+}
+
+.step-number {
+  position: absolute;
+  top: 24px;
+  left: 32px;
+  font-size: 3rem;
+  font-weight: 800;
+  color: #f1f5f9;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.step-icon-wrapper {
+  margin: 0 auto 20px;
+  background-color: #f0f9ff;
+  color: var(--primary);
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+}
+
+.step-card h3 {
+  font-size: 1.25rem;
+  color: var(--secondary);
+  margin-bottom: 12px;
+  text-transform: capitalize;
+  font-weight: 700;
+}
+
+.step-card p {
+  color: var(--text-light);
+  font-size: 0.95rem;
+}
