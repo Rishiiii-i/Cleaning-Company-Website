@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LogOut, User, Menu, X } from 'lucide-react';
 import logoPng from '../assets/logo.png';
+import ThemeToggle from './ThemeToggle';
 import './Navbar.css';
 
 export default function Navbar() {
@@ -34,9 +35,12 @@ export default function Navbar() {
 
         {/* desktop menu navigation */}
         <ul className="nav-links">
+          <li>
+            <ThemeToggle />
+          </li>
           <li><Link to="/" onClick={handleHomeClick}>Home</Link></li>
-          <li><a href="#how-it-works">How It Works</a></li>
           <li><a href="#services">Services</a></li>
+          <li><a href="#how-it-works">How It Works</a></li>
           <li><a href="#contact">Contact Us</a></li>
           {token ? (
             <>
@@ -70,8 +74,8 @@ export default function Navbar() {
         <div className="mobile-menu">
           <ul className="mobile-links">
             <li><Link to="/" onClick={(e) => { setIsOpen(false); handleHomeClick(e); }}>Home</Link></li>
-            <li><a href="#how-it-works" onClick={() => setIsOpen(false)}>How It Works</a></li>
             <li><a href="#services" onClick={() => setIsOpen(false)}>Services</a></li>
+            <li><a href="#how-it-works" onClick={() => setIsOpen(false)}>How It Works</a></li>
             <li><a href="#contact" onClick={() => setIsOpen(false)}>Contact Us</a></li>
             {token ? (
               <>
@@ -92,6 +96,9 @@ export default function Navbar() {
                 <li><Link to="/signup" onClick={() => setIsOpen(false)} className="btn btn-primary mobile-cta">Get Started</Link></li>
               </>
             )}
+            <li style={{ display: 'flex', justifyContent: 'center', marginTop: '8px' }}>
+              <ThemeToggle />
+            </li>
           </ul>
         </div>
       )}

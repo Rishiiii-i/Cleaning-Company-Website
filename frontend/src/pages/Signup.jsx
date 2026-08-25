@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, UserPlus, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { auth, googleProvider } from '../firebase';
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup } from 'firebase/auth';
 import heroImg from '../assets/hero.jpg';
 import logoPng from '../assets/logo.png';
+import googlePng from '../assets/google.png';
 import './Signup.css';
 
 export default function Signup() {
@@ -22,7 +25,7 @@ export default function Signup() {
     e.preventDefault();
     setError('');
 
-    // Check if passwords match
+    // check if passwords match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -31,7 +34,20 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/signup', {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
+      
+      await updateProfile(userCredential.user, {
+        displayName: formData.name
+      });
+
+      const token = await userCredential.user.getIdToken();
+
+      // sync user details to database
+      const syncResponse = await fetch('http://localhost:5000/api/users/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -40,18 +56,78 @@ export default function Signup() {
           password: formData.password
         })
       });
-      const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'signup failed');
+      if (!syncResponse.ok) {
+        const syncData = await syncResponse.json();
+        throw new Error(syncData.error || 'failed to sync user details to database');
       }
 
-      // save credentials and redirect to home
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('token', token);
+      localStorage.setItem(
+        'user',
+        JSON.stringify({
+          name: formData.name,
+          email: userCredential.user.email
+        })
+      );
+
       navigate('/');
     } catch (err) {
-      setError(err.message);
+      // clean error message from firebase response
+      const cleanMessage = err.message.replace('Firebase: ', '').replace('auth/', '');
+      setError(cleanMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // handle google login
+  const handleGoogleSignIn = async () => {
+    setError('');
+    setLoading(true);
+
+    try {
+      const userCredential = await signInWithPopup(auth, googleProvider);
+
+      const token = await userCredential.user.getIdToken();
+
+      // sync user details to database
+      const syncResponse = await fetch('http://localhost:5000/api/users/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: userCredential.user.displayName || 'User',
+          email: userCredential.user.email
+        })
+      });
+
+      if (!syncResponse.ok) {
+        const syncData = await syncResponse.json();
+        throw new Error(syncData.error || 'failed to sync user details to database');
+      }
+
+      localStorage.setItem('token', token);
+      localStorage.setItem(
+        'user',
+        JSON.stringify({
+          name: userCredential.user.displayName || 'User',
+          email: userCredential.user.email
+        })
+      );
+
+      navigate('/');
+    } catch (err) {
+      // ignore popup cancellation errors initiated by the user
+      if (
+        err.code === 'auth/user-cancelled' || 
+        err.code === 'auth/popup-closed-by-user' || 
+        err.code === 'auth/cancelled-popup-request'
+      ) {
+        return;
+      }
+      // clean error message from firebase response
+      const cleanMessage = err.message.replace('Firebase: ', '').replace('auth/', '');
+      setError(cleanMessage);
     } finally {
       setLoading(false);
     }
@@ -218,6 +294,22 @@ export default function Signup() {
                   <span>sign up</span>
                 </>
               )}
+            </button>
+
+            <div className="auth-divider" style={{ margin: '20px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+              <span style={{ height: '1px', backgroundColor: 'var(--border)', flexGrow: 1 }}></span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-light)', fontWeight: 500 }}>or</span>
+              <span style={{ height: '1px', backgroundColor: 'var(--border)', flexGrow: 1 }}></span>
+            </div>
+
+            <button 
+              type="button" 
+              onClick={handleGoogleSignIn} 
+              className="btn btn-secondary btn-full"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+            >
+              <img src={googlePng} alt="Google Logo" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
+              <span>Continue with Google</span>
             </button>
           </form>
 

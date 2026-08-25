@@ -3,7 +3,7 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background-color: rgba(255, 255, 255, 0.85);
+  background-color: var(--navbar-bg);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   transition: var(--transition);

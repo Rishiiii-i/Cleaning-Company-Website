@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Calendar, ArrowRight, ShieldCheck, Clock3, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import heroImage from '../assets/hero.jpg';
 import badgeCheckPng from '../assets/badge-check.png';
@@ -111,7 +111,43 @@ export default function Hero() {
             <span className="badge-text">Customer Rating</span>
           </motion.div>
         </motion.div>
+
       </div>
+
+      <motion.div 
+        className="trust-strip" 
+        aria-label="GlowHome service highlights"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8, duration: 0.8, ease: 'easeOut' }}
+      >
+        <div className="trust-strip-container">
+          <motion.div 
+            className="trust-strip-item"
+            whileHover={{ y: -4, scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+          >
+            <ShieldCheck size={22} />
+            <div><strong>Fully insured</strong><span>Trusted professionals</span></div>
+          </motion.div>
+          <motion.div 
+            className="trust-strip-item"
+            whileHover={{ y: -4, scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+          >
+            <Clock3 size={22} />
+            <div><strong>Book in 60 seconds</strong><span>Fast, simple scheduling</span></div>
+          </motion.div>
+          <motion.div 
+            className="trust-strip-item"
+            whileHover={{ y: -4, scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+          >
+            <Star size={22} />
+            <div><strong>4.9 customer rating</strong><span>Care in every clean</span></div>
+          </motion.div>
+        </div>
+      </motion.div>
     </section>
   );
 }

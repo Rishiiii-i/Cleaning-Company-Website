@@ -1,19 +1,14 @@
 .faq-section {
-  min-height: calc(100vh - 80px);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
   max-width: 800px;
   margin: 0 auto;
-  padding: 80px 24px;
+  padding: 72px 24px;
   box-sizing: border-box;
 }
 
 .faq-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 48px;
+  gap: 12px;
 }
 
 .faq-card {
@@ -34,7 +29,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
+  padding: 18px 22px;
   border: none;
   background: none;
   text-align: left;

@@ -3,8 +3,9 @@
   position: relative;
   min-height: calc(100vh - 80px);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  padding: 60px 24px;
+  padding: 48px 24px 56px;
   background-color: var(--background);
   overflow: hidden;
 }
@@ -17,14 +18,21 @@
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
-  gap: 40px;
+  gap: 32px;
   align-items: center;
+}
+
+.hero-section .trust-strip {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  margin-top: 24px;
 }
 
 .hero-content {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .hero-badge {
@@ -131,7 +139,7 @@
 .image-wrapper {
   width: 100%;
   max-width: 550px;
-  height: 460px;
+  height: 430px;
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.15);
@@ -189,36 +197,45 @@
 @media (max-width: 968px) {
   .hero-section {
     min-height: auto;
-    padding: 60px 24px;
+    padding: 48px 24px;
   }
+
   .hero-container {
     grid-template-columns: 1fr;
-    gap: 48px;
+    gap: 36px;
     text-align: center;
   }
+
   .hero-content {
     align-items: center;
   }
+
   .hero-content h1 {
     font-size: 3.2rem;
   }
+
   .hero-content p {
     margin: 0 auto;
     font-size: 1.1rem;
   }
+
   .hero-actions {
     justify-content: center;
   }
+
   .hero-features {
     justify-content: center;
   }
+
   .hero-visual {
     order: -1;
   }
+
   .image-wrapper {
     max-width: 100%;
     height: 380px;
   }
+
   .floating-badge {
     right: 20px;
     left: auto;
@@ -230,25 +247,28 @@
   .hero-content h1 {
     font-size: 2.5rem;
   }
+
   .hero-actions {
     flex-direction: column;
     width: 100%;
     gap: 12px;
   }
+
   .hero-actions .btn {
     width: 100%;
   }
+
   .hero-features {
     flex-direction: column;
     gap: 16px;
     align-items: center;
   }
+
   .image-wrapper {
     height: 260px;
   }
 }
 
-/* Ambient background blobs for premium depth */
 .hero-bg-blobs {
   position: absolute;
   top: 0;
@@ -292,4 +312,3 @@
   margin: 2px 0 4px 0;
   line-height: 1;
 }
-

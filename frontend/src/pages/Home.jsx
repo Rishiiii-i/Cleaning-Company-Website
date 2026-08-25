@@ -18,8 +18,8 @@ export default function Home() {
     <div className="home-page">
       <Navbar />
       <Hero />
-      <HowItWorks />
       <Services />
+      <HowItWorks />
       <WhyChooseUs />
       <Reviews />
       <Faq />

@@ -24,14 +24,14 @@ export default function WhyChooseUs() {
       <div className="trust-container">
         <motion.div 
           className="section-header" 
-          style={{ marginBottom: '40px' }}
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.6 }}
         >
-          <span className="section-badge">Why Choose Us?</span>
-          <h2>Why Choose Us?</h2>
+          <span className="section-badge">Why Choose Us</span>
+          <h2>Cleaning you can count on</h2>
+          <p>Reliable service, clear communication, and care in every visit.</p>
         </motion.div>
         <div className="trust-grid">
           {cards.map((card, index) => (

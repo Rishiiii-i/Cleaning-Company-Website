@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, ArrowLeft, CheckCircle2, KeyRound } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle2, KeyRound, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { auth } from '../firebase';
+import { sendPasswordResetEmail } from 'firebase/auth';
 import heroImg from '../assets/hero.jpg';
 import logoPng from '../assets/logo.png';
 import './Login.css'; 
@@ -10,15 +12,23 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
     
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await sendPasswordResetEmail(auth, email);
+
       setSubmitted(true);
-    }, 800);
+    } catch (err) {
+      const cleanMessage = err.message.replace('Firebase: ', '').replace('auth/', '');
+      setError(cleanMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -104,6 +114,17 @@ export default function ForgotPassword() {
                 <p className="auth-subtitle">
                   Enter your email address and we'll send you a link to reset your password.
                 </p>
+
+                {error && (
+                  <motion.div 
+                    className="auth-error"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <AlertCircle size={16} />
+                    <span>{error}</span>
+                  </motion.div>
+                )}
 
                 <form onSubmit={handleSubmit} className="auth-form">
                   <div className="input-group">

@@ -17,6 +17,21 @@
   --radius: 16px;
   --radius-lg: 24px;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --navbar-bg: rgba(255, 255, 255, 0.85);
+}
+
+/* dark mode variable overrides */
+:root.dark {
+  --background: #0f172a;
+  --surface: #1e293b;
+  --text: #f8fafc;
+  --text-light: #94a3b8;
+  --border: #334155;
+  --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+  --secondary: #ffffff;
+  --navbar-bg: rgba(30, 41, 59, 0.85);
 }
 
 /* global resets */
@@ -39,6 +54,7 @@ body {
   color: var(--text);
   line-height: 1.6;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 a {
