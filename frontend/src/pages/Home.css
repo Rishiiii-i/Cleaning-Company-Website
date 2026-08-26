@@ -162,3 +162,17 @@
     font-size: 2rem;
   }
 }
+
+@media (max-width: 480px) {
+  .cta-banner {
+    padding: 44px 16px;
+  }
+  
+  .cta-container h2 {
+    font-size: 1.6rem;
+  }
+  
+  .cta-container p {
+    font-size: 0.98rem;
+  }
+}

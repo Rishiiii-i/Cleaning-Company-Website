@@ -7,7 +7,7 @@
 
 .steps-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 24px;
 }
 
@@ -63,4 +63,21 @@
 .step-card p {
   color: var(--text-light);
   font-size: 0.95rem;
+}
+
+@media (max-width: 480px) {
+  .steps-container {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .step-card {
+    padding: 28px 20px;
+  }
+  
+  .step-number {
+    left: 20px;
+    top: 20px;
+    font-size: 2.5rem;
+  }
 }

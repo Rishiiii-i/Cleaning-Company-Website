@@ -1,0 +1,15 @@
+/* CustomerOverview styles */
+.booking-summary-highlight {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.booking-summary-highlight:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.quick-action-link-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.quick-action-link-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}

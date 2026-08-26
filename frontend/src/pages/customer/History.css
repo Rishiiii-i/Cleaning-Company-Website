@@ -1,0 +1,13 @@
+/* CustomerHistory styles */
+.history-booking-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.history-booking-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.btn-small {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  border-radius: 8px;
+}

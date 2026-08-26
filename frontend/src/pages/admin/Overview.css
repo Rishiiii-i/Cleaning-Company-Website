@@ -1,0 +1,43 @@
+/* Overview styles */
+.admin-table-wrapper {
+  overflow-x: auto;
+}
+.simple-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.simple-table th,
+.simple-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.stat-icon-green {
+  background: #ecfdf5;
+  color: #10b981;
+}
+.stat-icon-blue {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+.stat-icon-amber {
+  background: #fef3c7;
+  color: #d97706;
+}
+.stat-icon-purple {
+  background: #faf5ff;
+  color: #8b5cf6;
+}
+.stat-icon-rupee {
+  background: #ecfdf5;
+  color: #10b981;
+  font-size: 1.2rem;
+  font-weight: bold;
+  display: grid;
+  place-items: center;
+}
+.mt-12 {
+  margin-top: 12px;
+}
+.capitalize-text {
+  text-transform: capitalize;
+}

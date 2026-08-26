@@ -1,0 +1,15 @@
+/* AdminCustomers styles */
+.admin-data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.admin-data-table th {
+  background: #f8fafc;
+  font-weight: 600;
+  text-align: left;
+}
+.admin-data-table th,
+.admin-data-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}

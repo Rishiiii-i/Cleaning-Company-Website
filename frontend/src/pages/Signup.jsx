@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, UserPlus, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, User, UserPlus, AlertCircle, CheckCircle2, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { auth, googleProvider } from '../firebase';
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup } from 'firebase/auth';
@@ -14,6 +14,8 @@ export default function Signup() {
   const [formData, setFormData] = useState({ name: '', email: '', password: '', confirmPassword: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // handle text input change
   const handleChange = (e) => {
@@ -71,7 +73,12 @@ export default function Signup() {
         })
       );
 
-      navigate('/');
+      // redirect new customer directly to dashboard
+      if (formData.email === 'admin@gmail.com') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       // clean error message from firebase response
       const cleanMessage = err.message.replace('Firebase: ', '').replace('auth/', '');
@@ -115,7 +122,12 @@ export default function Signup() {
         })
       );
 
-      navigate('/');
+      // redirect new customer directly to dashboard
+      if (userCredential.user.email === 'admin@gmail.com') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       // ignore popup cancellation errors initiated by the user
       if (
@@ -256,15 +268,23 @@ export default function Signup() {
               <div className="input-with-icon">
                 <Lock size={18} className="input-icon" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   id="password"
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="create password"
-                  className="form-input icon-padding"
+                  className="form-input icon-padding password-padding"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="password-toggle-btn"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 
@@ -273,15 +293,23 @@ export default function Signup() {
               <div className="input-with-icon">
                 <Lock size={18} className="input-icon" />
                 <input
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   id="confirmPassword"
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   placeholder="confirm password"
-                  className="form-input icon-padding"
+                  className="form-input icon-padding password-padding"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="password-toggle-btn"
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 

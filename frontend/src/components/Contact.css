@@ -13,7 +13,7 @@
   align-items: start;
 }
 
-@media (max-width: 968px) {
+@media (max-width: 1024px) {
   .contact-grid {
     grid-template-columns: 1fr;
     gap: 48px;
@@ -175,4 +175,18 @@
   font-size: 0.92rem;
   max-width: 320px;
   line-height: 1.6;
+}
+
+@media (max-width: 480px) {
+  .contact-section {
+    padding: 48px 16px;
+  }
+
+  .contact-form-card {
+    padding: 24px 16px;
+  }
+  
+  .contact-info-title h3 {
+    font-size: 1.5rem;
+  }
 }

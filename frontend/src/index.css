@@ -154,3 +154,32 @@ ul {
     transform: translateY(0px);
   }
 }
+
+/* Password Toggle Styles */
+.password-toggle-btn {
+  position: absolute;
+  right: 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: var(--transition);
+  z-index: 10;
+}
+
+.password-toggle-btn:hover {
+  color: var(--primary);
+}
+
+.password-toggle-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  border-radius: 4px;
+}
+
+.password-padding {
+  padding-right: 48px !important;
+}

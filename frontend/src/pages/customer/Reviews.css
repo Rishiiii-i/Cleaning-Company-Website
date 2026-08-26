@@ -1,0 +1,32 @@
+/* Reviews styles */
+.review-stars-row {
+  display: flex;
+  gap: 2px;
+}
+.completed-review-display {
+  margin-top: 10px;
+}
+.completed-review-display p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+.review-text-italic {
+  margin-top: 8px;
+  font-style: italic;
+}
+.unreviewed-state-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 12px;
+}
+.unreviewed-label {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  margin: 0;
+}
+.btn-rating-trigger {
+  margin-top: 8px;
+}

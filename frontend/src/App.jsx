@@ -4,6 +4,8 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
+import CustomerDashboard from './pages/customer/Dashboard';
+import AdminDashboard from './pages/admin/Dashboard';
 
 // main application routing component
 export default function App() {
@@ -14,6 +16,12 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        
+        {/* client dashboard control route */}
+        <Route path="/dashboard" element={<CustomerDashboard />} />
+        
+        {/* administrator operation route */}
+        <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </Router>
   );

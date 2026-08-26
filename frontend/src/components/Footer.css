@@ -70,9 +70,25 @@
   font-size: 0.88rem;
 }
 
-@media (max-width: 968px) {
+@media (max-width: 1024px) {
   .footer-container {
     grid-template-columns: 1fr;
     gap: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .footer {
+    padding: 48px 16px 20px;
+  }
+
+  .footer-container {
+    gap: 32px;
+    margin-bottom: 32px;
+  }
+  
+  .footer-info h3 {
+    font-size: 1.3rem;
+    margin-bottom: 12px;
   }
 }

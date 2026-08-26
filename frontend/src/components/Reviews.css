@@ -7,7 +7,7 @@
 
 .reviews-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 24px;
 }
 
@@ -84,4 +84,31 @@
   border-radius: 100px;
   font-weight: 600;
   text-transform: capitalize;
+}
+
+@media (max-width: 480px) {
+  .reviews-section {
+    padding: 48px 16px;
+  }
+
+  .reviews-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .review-card {
+    padding: 24px 20px;
+  }
+
+  .quote-icon {
+    width: 36px;
+    height: 36px;
+    top: 20px;
+    right: 20px;
+  }
+  
+  .review-comment {
+    font-size: 0.95rem;
+    margin-bottom: 18px;
+  }
 }

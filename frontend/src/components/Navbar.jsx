@@ -5,11 +5,26 @@ import logoPng from '../assets/logo.png';
 import ThemeToggle from './ThemeToggle';
 import './Navbar.css';
 
-export default function Navbar() {
+export default function Navbar({ portalName, activeTab, rightActions }) {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  
+  const getUser = () => {
+    try {
+      const data = localStorage.getItem('user');
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (parsed && typeof parsed === 'object') return parsed;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return {};
+  };
+  const user = getUser();
+
   const [isOpen, setIsOpen] = React.useState(false);
+  const isDashboard = window.location.pathname === '/dashboard' || window.location.pathname === '/admin';
 
   const handleHomeClick = (e) => {
     if (window.location.pathname === '/') {
@@ -33,40 +48,72 @@ export default function Navbar() {
           <span>GlowHome</span>
         </Link>
 
+        {isDashboard && (
+          <div className="navbar-portal-title">
+            <span className="portal-eyebrow">{portalName}</span>
+            <h2 className="portal-heading">
+              {activeTab === 'overview'
+                ? 'Dashboard'
+                : activeTab
+                ? activeTab.charAt(0).toUpperCase() + activeTab.slice(1)
+                : ''}
+            </h2>
+          </div>
+        )}
+
         {/* desktop menu navigation */}
-        <ul className="nav-links">
-          <li>
-            <ThemeToggle />
-          </li>
-          <li><Link to="/" onClick={handleHomeClick}>Home</Link></li>
-          <li><a href="#services">Services</a></li>
-          <li><a href="#how-it-works">How It Works</a></li>
-          <li><a href="#contact">Contact Us</a></li>
-          {token ? (
-            <>
-              <li className="nav-user">
-                <User size={18} />
-                <span>{user.name}</span>
-              </li>
-              <li>
-                <button onClick={handleLogout} className="btn-logout">
-                  <LogOut size={16} />
-                  <span>Logout</span>
-                </button>
-              </li>
-            </>
-          ) : (
-            <>
-              <li><Link to="/login" className="nav-login">Login</Link></li>
-              <li><Link to="/signup" className="btn btn-primary nav-cta">Get Started</Link></li>
-            </>
-          )}
-        </ul>
+        {!isDashboard && (
+          <ul className="nav-links">
+            <li>
+              <ThemeToggle />
+            </li>
+            <li><Link to="/" onClick={handleHomeClick}>Home</Link></li>
+            <li><a href="#services">Services</a></li>
+            <li><a href="#how-it-works">How It Works</a></li>
+            <li><a href="#contact">Contact Us</a></li>
+            {token ? (
+              <>
+                <li>
+                  <Link to={user.email === 'admin@gmail.com' ? '/admin' : '/dashboard'} className="nav-dashboard" style={{ fontWeight: 600, color: 'var(--primary)' }}>
+                    Dashboard
+                  </Link>
+                </li>
+                <li className="nav-user">
+                  <User size={18} />
+                  <span>{user.name}</span>
+                </li>
+                <li>
+                  <button onClick={handleLogout} className="btn-logout">
+                    <LogOut size={16} />
+                    <span>Logout</span>
+                  </button>
+                </li>
+              </>
+            ) : (
+              <>
+                <li><Link to="/login" className="nav-login">Login</Link></li>
+                <li><Link to="/signup" className="btn btn-primary nav-cta">Get Started</Link></li>
+              </>
+            )}
+          </ul>
+        )}
+
+        {isDashboard && (
+          <div className="dashboard-nav-actions">
+            {rightActions}
+            <div className="dashboard-nav-user">
+              <User size={17} />
+              <span>{user.name || 'Customer'}</span>
+            </div>
+          </div>
+        )}
 
         {/* mobile hamburger button */}
-        <button onClick={() => setIsOpen(!isOpen)} className="mobile-toggle">
-          {isOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        {!isDashboard && (
+          <button onClick={() => setIsOpen(!isOpen)} className="mobile-toggle">
+            {isOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        )}
       </div>
 
       {/* mobile menu navigation drawer */}
@@ -79,6 +126,16 @@ export default function Navbar() {
             <li><a href="#contact" onClick={() => setIsOpen(false)}>Contact Us</a></li>
             {token ? (
               <>
+                <li>
+                  <Link 
+                    to={user.email === 'admin@gmail.com' ? '/admin' : '/dashboard'} 
+                    onClick={() => setIsOpen(false)} 
+                    className="mobile-dashboard"
+                    style={{ fontWeight: 600, color: 'var(--primary)' }}
+                  >
+                    Dashboard
+                  </Link>
+                </li>
                 <li className="mobile-user">
                   <User size={18} />
                   <span>{user.name}</span>
