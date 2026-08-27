@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User');
+// import custom booking routes
+const bookingRoutes = require('./routes/booking');
 
 // initialize database connection
 require('./db');
@@ -16,6 +18,9 @@ app.use(cors());
 
 // parse json request body
 app.use(express.json());
+
+// mount booking routes middleware
+app.use('/api', bookingRoutes);
 
 // basic status check route
 app.get('/api/status', (req, res) => {
