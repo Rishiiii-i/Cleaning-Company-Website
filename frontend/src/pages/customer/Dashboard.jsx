@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
-import { User, LogOut, ShieldCheck, Calendar, Clock, FileText, DollarSign, Star, Bell, X, Shield } from 'lucide-react';
+import { User, LogOut, ShieldCheck, Calendar, Clock, FileText, DollarSign, Star, Bell, X, Shield, Sparkles, ClipboardList } from 'lucide-react';
 import './Dashboard.css';
 
 import CustomerOverview from './Overview';
@@ -11,6 +11,7 @@ import CustomerPayments from './Payments';
 import CustomerReviews from './Reviews';
 import CustomerProfile from './Profile';
 import CustomerNotifications from './Notifications';
+import ServicesList from './ServicesList';
 
 export default function CustomerDashboard() {
   // safely retrieve user from localStorage
@@ -42,6 +43,26 @@ export default function CustomerDashboard() {
 
   // Initial bookings state
   const [bookings, setBookings] = useState([]);
+
+  // fetch cleaning bookings list from backend database
+  useEffect(() => {
+    const loadBookingsData = async () => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/bookings?email=${encodeURIComponent(profile.email)}`);
+        if (response.ok) {
+          const data = await response.json();
+          // attach a standard id attribute from mongodb _id
+          const formatted = data.map((b) => ({ ...b, id: b.id || b._id }));
+          setBookings(formatted);
+        }
+      } catch (err) {
+        console.error('Error fetching bookings:', err);
+      }
+    };
+    if (profile.email) {
+      loadBookingsData();
+    }
+  }, [profile.email]);
 
   // Notifications list state
   const [notifications, setNotifications] = useState([]);
@@ -127,98 +148,147 @@ export default function CustomerDashboard() {
   };
 
   // submit new service booking request
-  const handleBookingSubmit = (e) => {
+  const handleBookingSubmit = async (e) => {
     e.preventDefault();
     const serviceDetails = getServiceInfo(formData.serviceType);
 
-    const newBooking = {
-      id: `B${Math.floor(100 + Math.random() * 900)}`,
-      serviceType: formData.serviceType,
-      date: formData.date,
-      time: formData.time,
-      address: formData.address || profile.address,
-      notes: formData.notes,
-      price: serviceDetails.price,
-      status: 'scheduled',
-      rating: null,
-      review: null
-    };
+    try {
+      const response = await fetch('http://localhost:5000/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userEmail: profile.email,
+          serviceType: formData.serviceType,
+          price: serviceDetails.price,
+          date: formData.date,
+          time: formData.time,
+          address: formData.address || profile.address,
+          notes: formData.notes
+        })
+      });
 
-    setBookings([newBooking, ...bookings]);
+      if (response.ok) {
+        // refetch bookings from database
+        const freshResponse = await fetch(`http://localhost:5000/api/bookings?email=${encodeURIComponent(profile.email)}`);
+        if (freshResponse.ok) {
+          const freshData = await freshResponse.json();
+          const formatted = freshData.map((b) => ({ ...b, id: b.id || b._id }));
+          setBookings(formatted);
+        }
 
-    const newNotif = {
-      id: `N${Math.floor(10 + Math.random() * 90)}`,
-      title: 'Booking Created',
-      message: `your cleaning booking ${newBooking.id} has been created successfully.`,
-      date: new Date().toISOString().split('T')[0],
-      read: false
-    };
-    setNotifications([newNotif, ...notifications]);
+        const newNotif = {
+          id: `N${Math.floor(10 + Math.random() * 90)}`,
+          title: 'Booking Created',
+          message: `your cleaning booking has been created successfully.`,
+          date: new Date().toISOString().split('T')[0],
+          read: false
+        };
+        setNotifications([newNotif, ...notifications]);
 
-    setFormData({
-      serviceType: 'standard',
-      date: '',
-      time: '',
-      address: '',
-      notes: ''
-    });
+        setFormData({
+          serviceType: 'standard',
+          date: '',
+          time: '',
+          address: '',
+          notes: ''
+        });
 
-    setActiveTab('bookings');
+        setActiveTab('bookings');
+      }
+    } catch (err) {
+      console.error('Error submitting booking:', err);
+    }
   };
 
   // cancel a scheduled or pending booking
-  const handleCancelBooking = (id) => {
-    const updated = bookings.map((item) =>
-      item.id === id ? { ...item, status: 'cancelled' } : item
-    );
-    setBookings(updated);
+  const handleCancelBooking = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/bookings/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled' })
+      });
 
-    const newNotif = {
-      id: `N${Math.floor(10 + Math.random() * 90)}`,
-      title: 'Booking Cancelled',
-      message: `your cleaning booking ${id} was cancelled.`,
-      date: new Date().toISOString().split('T')[0],
-      read: false
-    };
-    setNotifications([newNotif, ...notifications]);
+      if (response.ok) {
+        const updated = bookings.map((item) =>
+          item.id === id ? { ...item, status: 'cancelled' } : item
+        );
+        setBookings(updated);
+
+        const newNotif = {
+          id: `N${Math.floor(10 + Math.random() * 90)}`,
+          title: 'Booking Cancelled',
+          message: `your cleaning booking ${id} was cancelled.`,
+          date: new Date().toISOString().split('T')[0],
+          read: false
+        };
+        setNotifications([newNotif, ...notifications]);
+      }
+    } catch (err) {
+      console.error('Error cancelling booking:', err);
+    }
   };
 
   // save rescheduled date and time
-  const handleRescheduleSubmit = (e) => {
+  const handleRescheduleSubmit = async (e) => {
     e.preventDefault();
     if (!rescheduleDate || !rescheduleTime) return;
 
-    const updated = bookings.map((item) =>
-      item.id === activeRescheduleId ? { ...item, date: rescheduleDate, time: rescheduleTime } : item
-    );
-    setBookings(updated);
+    try {
+      const response = await fetch(`http://localhost:5000/api/bookings/${activeRescheduleId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: rescheduleDate, time: rescheduleTime })
+      });
 
-    const newNotif = {
-      id: `N${Math.floor(10 + Math.random() * 90)}`,
-      title: 'Booking Rescheduled',
-      message: `your cleaning booking ${activeRescheduleId} was updated to ${rescheduleDate} at ${rescheduleTime}.`,
-      date: new Date().toISOString().split('T')[0],
-      read: false
-    };
-    setNotifications([newNotif, ...notifications]);
+      if (response.ok) {
+        const updated = bookings.map((item) =>
+          item.id === activeRescheduleId ? { ...item, date: rescheduleDate, time: rescheduleTime } : item
+        );
+        setBookings(updated);
 
-    setActiveRescheduleId(null);
-    setRescheduleDate('');
-    setRescheduleTime('');
+        const newNotif = {
+          id: `N${Math.floor(10 + Math.random() * 90)}`,
+          title: 'Booking Rescheduled',
+          message: `your cleaning booking ${activeRescheduleId} was updated to ${rescheduleDate} at ${rescheduleTime}.`,
+          date: new Date().toISOString().split('T')[0],
+          read: false
+        };
+        setNotifications([newNotif, ...notifications]);
+
+        setActiveRescheduleId(null);
+        setRescheduleDate('');
+        setRescheduleTime('');
+      }
+    } catch (err) {
+      console.error('Error rescheduling booking:', err);
+    }
   };
 
   // submit customer rating and review
-  const handleReviewSubmit = (e) => {
+  const handleReviewSubmit = async (e) => {
     e.preventDefault();
 
-    const updated = bookings.map((item) =>
-      item.id === activeReviewId ? { ...item, rating: ratingInput, review: reviewInput } : item
-    );
-    setBookings(updated);
+    try {
+      const response = await fetch(`http://localhost:5000/api/bookings/${activeReviewId}/review`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating: ratingInput, review: reviewInput })
+      });
 
-    setActiveReviewId(null);
-    setRatingInput(5);
-    setReviewInput('');
+      if (response.ok) {
+        const updated = bookings.map((item) =>
+          item.id === activeReviewId ? { ...item, rating: ratingInput, review: reviewInput } : item
+        );
+        setBookings(updated);
+
+        setActiveReviewId(null);
+        setRatingInput(5);
+        setReviewInput('');
+      }
+    } catch (err) {
+      console.error('Error submitting review:', err);
+    }
   };
 
   // toggle notifications read status
@@ -236,17 +306,37 @@ export default function CustomerDashboard() {
   };
 
   // calculate summary statistics for dynamic cards
-  const totalBookings = 0;
-  const upcomingCount = 0;
-  const completedCount = 0;
-  const pendingCount = 0;
-  const unreadNotifications = 0;
-  const nextBooking = null;
-  const formatDate = (date) => new Intl.DateTimeFormat('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
-  }).format(new Date(`${date}T12:00:00`));
+  const totalBookings = bookings.length;
+  const upcomingCount = bookings.filter(b => b.status === 'scheduled' || b.status === 'pending').length;
+  const completedCount = bookings.filter(b => b.status === 'completed').length;
+  const pendingCount = bookings.filter(b => b.status === 'pending').length;
+  const unreadNotifications = notifications.filter(n => !n.read).length;
+
+  // calculate the next scheduled or pending booking
+  const sortedBookings = [...bookings].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const nextBooking = sortedBookings.find(b => b.status === 'scheduled' || b.status === 'pending') || null;
+
+  const formatDate = (date) => {
+    try {
+      if (!date) return '';
+      return new Intl.DateTimeFormat('en-US', {
+        weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+      }).format(new Date(`${date}T12:00:00`));
+    } catch (e) {
+      return date;
+    }
+  };
   const selectedService = getServiceInfo(formData.serviceType);
-  const activeBookings = [];
+
+  // filter active bookings based on search input
+  const activeBookings = bookings.filter(b => {
+    const isStatusMatch = b.status === 'scheduled' || b.status === 'pending' || b.status === 'completed';
+    const serviceName = getServiceInfo(b.serviceType).name.toLowerCase();
+    const query = bookingSearch.toLowerCase();
+    const idString = String(b.id || b._id || '').toLowerCase();
+    const isSearchMatch = idString.includes(query) || serviceName.includes(query);
+    return isStatusMatch && isSearchMatch;
+  });
 
   return (
     <div className="customer-dashboard-page">
@@ -278,6 +368,13 @@ export default function CustomerDashboard() {
             >
               <ShieldCheck size={18} />
               <span>Overview</span>
+            </button>
+            <button
+              className={`nav-item-btn ${activeTab === 'services' ? 'active' : ''}`}
+              onClick={() => setActiveTab('services')}
+            >
+              <ClipboardList size={18} />
+              <span>Services List</span>
             </button>
             <button
               className={`nav-item-btn ${activeTab === 'bookings' ? 'active' : ''}`}
@@ -361,6 +458,16 @@ export default function CustomerDashboard() {
               formatDate={formatDate}
               setActiveTab={setActiveTab}
               getServiceInfo={getServiceInfo}
+            />
+          )}
+
+          {activeTab === 'services' && (
+            <ServicesList 
+              onBookServiceClick={(serviceId) => {
+                // select the service in bookings form and redirect to bookings tab
+                setFormData(prev => ({ ...prev, serviceType: serviceId }));
+                setActiveTab('bookings');
+              }}
             />
           )}
 

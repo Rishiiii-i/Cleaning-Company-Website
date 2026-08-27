@@ -1,24 +1,87 @@
-/* Payments styles */
+/* Payments list table layout styling */
 .payments-data-table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 1rem;
 }
+
 .payments-data-table th,
 .payments-data-table td {
-  padding: 12px;
+  padding: 14px;
+  text-align: left;
   border-bottom: 1px solid var(--border);
 }
-.payment-status-badge {
-  background: #ecfdf5;
-  color: #10b981;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 0.78rem;
-  font-weight: 500;
-  text-transform: uppercase;
+
+.payments-data-table th {
+  background-color: var(--background);
+  color: var(--secondary);
+  font-weight: 600;
+  font-size: 0.9rem;
 }
+
+.payments-data-table td {
+  color: var(--text);
+  font-size: 0.88rem;
+}
+
+/* Pay Now checkout button */
+.btn-pay-now {
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-pay-now:hover {
+  background-color: var(--primary-hover);
+}
+
+.btn-pay-now:active {
+  transform: scale(0.97);
+}
+
+/* Paid notes */
+.payment-paid-note {
+  color: var(--text-light);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Paid vs Unpaid status badges */
+.payment-status-badge {
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  display: inline-block;
+}
+
+.payment-status-badge.paid {
+  background-color: #ecfdf5;
+  color: #10b981;
+  border: 1px solid #a7f3d0;
+}
+
+.payment-status-badge.unpaid {
+  background-color: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #fecaca;
+}
+
+/* Empty row banner */
 .table-empty-row {
   text-align: center;
-  padding: 24px;
+  padding: 32px !important;
   color: var(--text-light);
+  font-size: 0.95rem;
 }

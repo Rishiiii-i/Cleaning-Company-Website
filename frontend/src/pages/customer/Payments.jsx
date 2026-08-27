@@ -2,10 +2,13 @@ import React from 'react';
 import './Payments.css';
 
 export default function CustomerPayments({ bookings, getServiceInfo }) {
+  // filter completed bookings for receipt logs
   const completedBookings = bookings.filter(b => b.status === 'completed');
 
   return (
     <div className="dashboard-panel">
+      
+      {/* receipt list table */}
       <div className="bookings-table-container">
         <table className="payments-data-table">
           <thead>
@@ -28,7 +31,7 @@ export default function CustomerPayments({ bookings, getServiceInfo }) {
                   <td>{b.date}</td>
                   <td>Visa **** 4410</td>
                   <td><strong>₹{b.price}</strong></td>
-                  <td><span className="payment-status-badge">paid</span></td>
+                  <td><span className="payment-status-badge paid">paid</span></td>
                 </tr>
               );
             })}
@@ -42,6 +45,7 @@ export default function CustomerPayments({ bookings, getServiceInfo }) {
           </tbody>
         </table>
       </div>
+
     </div>
   );
 }
