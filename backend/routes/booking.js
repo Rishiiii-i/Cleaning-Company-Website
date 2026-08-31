@@ -21,7 +21,7 @@ router.get('/bookings', async (req, res) => {
 // create a new service booking
 router.post('/bookings', async (req, res) => {
   try {
-    const { userEmail, serviceType, price, date, time, address, notes } = req.body;
+    const { userEmail, serviceType, price, date, time, address, notes, paymentMethod } = req.body;
     // validate required booking fields
     if (!userEmail || !serviceType || !price || !date || !time || !address) {
       return res.status(400).json({ error: 'Required fields are missing' });
@@ -34,7 +34,8 @@ router.post('/bookings', async (req, res) => {
       date,
       time,
       address,
-      notes
+      notes,
+      paymentMethod: paymentMethod || 'online'
     });
     // save booking to database
     await newBooking.save();

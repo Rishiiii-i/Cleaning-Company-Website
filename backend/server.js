@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 const User = require('./models/User');
 // import custom booking routes
 const bookingRoutes = require('./routes/booking');
+// import custom payment routes
+const paymentRoutes = require('./routes/payment');
 
 // initialize database connection
 require('./db');
@@ -21,6 +23,8 @@ app.use(express.json());
 
 // mount booking routes middleware
 app.use('/api', bookingRoutes);
+// mount payment routes middleware
+app.use('/api', paymentRoutes);
 
 // basic status check route
 app.get('/api/status', (req, res) => {
