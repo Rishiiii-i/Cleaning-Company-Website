@@ -2,8 +2,8 @@ import React from 'react';
 import './Payments.css';
 
 export default function CustomerPayments({ bookings, getServiceInfo }) {
-  // filter completed bookings for receipt logs
-  const completedBookings = bookings.filter(b => b.status === 'completed');
+  // filter paid bookings for receipt logs
+  const paidBookings = bookings.filter(b => b.paymentStatus === 'paid');
 
   return (
     <div className="dashboard-panel">
@@ -16,28 +16,26 @@ export default function CustomerPayments({ bookings, getServiceInfo }) {
               <th>Receipt No</th>
               <th>Clean Service</th>
               <th>Payment Date</th>
-              <th>Mock Method</th>
               <th>Payment Value</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody>
-            {completedBookings.map((b, idx) => {
+            {paidBookings.map((b, idx) => {
               const info = getServiceInfo(b.serviceType);
               return (
                 <tr key={b.id}>
                   <td><strong>REC-00{idx + 1}</strong></td>
                   <td>{info.name} (ID: {b.id})</td>
                   <td>{b.date}</td>
-                  <td>Visa **** 4410</td>
                   <td><strong>₹{b.price}</strong></td>
                   <td><span className="payment-status-badge paid">paid</span></td>
                 </tr>
               );
             })}
-            {completedBookings.length === 0 && (
+            {paidBookings.length === 0 && (
               <tr>
-                <td colSpan="6" className="table-empty-row">
+                <td colSpan="5" className="table-empty-row">
                   No payments are found.
                 </td>
               </tr>

@@ -8,7 +8,8 @@ export default function CustomerHistory({
   setActiveReviewId,
   formatDate
 }) {
-  const historyBookings = bookings.filter(b => b.status === 'completed' || b.status === 'cancelled');
+  // show all bookings in history list
+  const historyBookings = bookings;
 
   return (
     <div className="dashboard-panel">

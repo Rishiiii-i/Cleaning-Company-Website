@@ -15,12 +15,13 @@ export default function CustomerBookings({
   setRescheduleTime,
   handleCancelBooking,
   getServiceInfo,
-  formatDate
+  formatDate,
+  handlePayment
 }) {
   return (
     <div className="dashboard-panel">
       <div className="booking-layout-grid">
-        
+
         {/* booking details input form */}
         <form onSubmit={handleBookingSubmit} className="booking-form-card">
           <div className="booking-form-heading">
@@ -102,6 +103,22 @@ export default function CustomerBookings({
             </div>
           </div>
 
+          {/* select payment option field */}
+          <div className="form-group-row">
+            <div className="form-input-box">
+              <label>Select Payment Option</label>
+              <select
+                name="paymentOption"
+                value={formData.paymentOption}
+                onChange={handleInputChange}
+                className="form-select-field"
+              >
+                <option value="online">Online Payment (Card, UPI, Netbanking)</option>
+                <option value="cod">Cash on Delivery (COD)</option>
+              </select>
+            </div>
+          </div>
+
           <button type="submit" className="btn btn-primary btn-full-width">
             <CheckCircle size={18} />
             <span>Schedule Service</span>
@@ -127,6 +144,10 @@ export default function CustomerBookings({
                       <span className={`status-badge-indicator ${booking.status}`}>
                         {booking.status}
                       </span>
+                      {/* show booking payment status */}
+                      <span className={`payment-badge ${booking.paymentStatus || 'unpaid'}`}>
+                        {booking.paymentStatus || 'unpaid'}
+                      </span>
                     </div>
 
                     <h4 className="service-name-label">{info.name}</h4>
@@ -139,22 +160,33 @@ export default function CustomerBookings({
 
                   <div className="booking-card-sidebar">
                     <strong className="booking-card-price">₹{booking.price}</strong>
-                    {(booking.status === 'scheduled' || booking.status === 'pending') && (
-                      <div className="action-buttons-col">
+                    <div className="action-buttons-col">
+                      {booking.paymentStatus !== 'paid' && booking.status !== 'cancelled' && (
                         <button
-                          onClick={() => { setActiveRescheduleId(booking.id); setRescheduleDate(booking.date); setRescheduleTime(booking.time); }}
-                          className="btn-reschedule-action"
+                          onClick={() => handlePayment(booking)}
+                          className="btn-pay-now"
+                          type="button"
                         >
-                          <span>Reschedule</span>
+                          <span>Pay Now</span>
                         </button>
-                        <button
-                          onClick={() => handleCancelBooking(booking.id)}
-                          className="btn-cancel-service"
-                        >
-                          <span>Cancel</span>
-                        </button>
-                      </div>
-                    )}
+                      )}
+                      {(booking.status === 'scheduled' || booking.status === 'pending') && (
+                        <>
+                          <button
+                            onClick={() => { setActiveRescheduleId(booking.id); setRescheduleDate(booking.date); setRescheduleTime(booking.time); }}
+                            className="btn-reschedule-action"
+                          >
+                            <span>Reschedule</span>
+                          </button>
+                          <button
+                            onClick={() => handleCancelBooking(booking.id)}
+                            className="btn-cancel-service"
+                          >
+                            <span>Cancel</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

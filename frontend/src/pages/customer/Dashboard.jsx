@@ -73,7 +73,8 @@ export default function CustomerDashboard() {
     date: '',
     time: '',
     address: '',
-    notes: ''
+    notes: '',
+    paymentOption: 'online'
   });
 
   // Active reviews rating modal states
@@ -147,6 +148,104 @@ export default function CustomerDashboard() {
     }
   };
 
+  // load razorpay script dynamically
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => {
+        resolve(true);
+      };
+      script.onerror = () => {
+        resolve(false);
+      };
+      document.body.appendChild(script);
+    });
+  };
+
+  // handle payment gateway initiation
+  const handlePayment = async (booking) => {
+    try {
+      // load payment script
+      const loaded = await loadRazorpayScript();
+      if (!loaded) {
+        alert('failed to load razorpay SDK. check internet connection.');
+        return;
+      }
+      // create payment order on server
+      const response = await fetch('http://localhost:5000/api/payments/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId: booking.id })
+      });
+      if (!response.ok) {
+        alert('failed to create payment order. try again.');
+        return;
+      }
+      const order = await response.json();
+      // initialize razorpay options object
+      const options = {
+        key: 'rzp_test_TWFaY8FTrY0x12',
+        amount: order.amount,
+        currency: order.currency,
+        name: 'GlowHome Cleaning',
+        description: `payment for ${getServiceInfo(booking.serviceType).name}`,
+        order_id: order.id,
+        prefill: {
+          name: profile.name,
+          email: profile.email,
+          contact: profile.phone
+        },
+        theme: {
+          color: '#2563eb'
+        },
+        handler: async (paymentResponse) => {
+          try {
+            // verify payment signature on backend
+            const verifyRes = await fetch('http://localhost:5000/api/payments/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                bookingId: booking.id,
+                razorpay_order_id: paymentResponse.razorpay_order_id,
+                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                razorpay_signature: paymentResponse.razorpay_signature
+              })
+            });
+            if (verifyRes.ok) {
+              // reload booking list data
+              const freshResponse = await fetch(`http://localhost:5000/api/bookings?email=${encodeURIComponent(profile.email)}`);
+              if (freshResponse.ok) {
+                const freshData = await freshResponse.json();
+                const formatted = freshData.map((b) => ({ ...b, id: b.id || b._id }));
+                setBookings(formatted);
+              }
+              // add success alert notification
+              const newNotif = {
+                id: `N${Math.floor(10 + Math.random() * 90)}`,
+                title: 'Payment Successful',
+                message: `your payment of ₹${booking.price} has been received.`,
+                date: new Date().toISOString().split('T')[0],
+                read: false
+              };
+              setNotifications(prev => [newNotif, ...prev]);
+              alert('payment successful and booking updated!');
+            } else {
+              alert('payment verification failed.');
+            }
+          } catch (err) {
+            console.error('error verifying payment:', err);
+          }
+        }
+      };
+      // open razorpay checkout gateway
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+    } catch (err) {
+      console.error('error processing payment:', err);
+    }
+  };
+
   // submit new service booking request
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
@@ -163,11 +262,15 @@ export default function CustomerDashboard() {
           date: formData.date,
           time: formData.time,
           address: formData.address || profile.address,
-          notes: formData.notes
+          notes: formData.notes,
+          paymentMethod: formData.paymentOption
         })
       });
 
       if (response.ok) {
+        const newBookingData = await response.json();
+        const bookingId = newBookingData.id || newBookingData._id;
+
         // refetch bookings from database
         const freshResponse = await fetch(`http://localhost:5000/api/bookings?email=${encodeURIComponent(profile.email)}`);
         if (freshResponse.ok) {
@@ -190,10 +293,18 @@ export default function CustomerDashboard() {
           date: '',
           time: '',
           address: '',
-          notes: ''
+          notes: '',
+          paymentOption: 'online'
         });
 
         setActiveTab('bookings');
+
+        // initiate payment for new booking if online is selected
+        if (formData.paymentOption === 'online') {
+          handlePayment({ ...newBookingData, id: bookingId });
+        } else {
+          alert('booking scheduled successfully with cash on delivery!');
+        }
       }
     } catch (err) {
       console.error('Error submitting booking:', err);
@@ -356,7 +467,7 @@ export default function CustomerDashboard() {
         }
       />
       <div className="customer-dashboard-container">
-        
+
         {/* sidebar panel layout */}
         <aside className="dashboard-sidebar">
           {/* dashboard tab navigations */}
@@ -448,7 +559,7 @@ export default function CustomerDashboard() {
         {/* main content display area */}
         <main className="dashboard-main-content">
           {activeTab === 'overview' && (
-            <CustomerOverview 
+            <CustomerOverview
               profile={profile}
               totalBookings={totalBookings}
               upcomingCount={upcomingCount}
@@ -462,7 +573,7 @@ export default function CustomerDashboard() {
           )}
 
           {activeTab === 'services' && (
-            <ServicesList 
+            <ServicesList
               onBookServiceClick={(serviceId) => {
                 // select the service in bookings form and redirect to bookings tab
                 setFormData(prev => ({ ...prev, serviceType: serviceId }));
@@ -472,7 +583,7 @@ export default function CustomerDashboard() {
           )}
 
           {activeTab === 'bookings' && (
-            <CustomerBookings 
+            <CustomerBookings
               activeBookings={activeBookings}
               bookingSearch={bookingSearch}
               setBookingSearch={setBookingSearch}
@@ -486,11 +597,12 @@ export default function CustomerDashboard() {
               handleCancelBooking={handleCancelBooking}
               getServiceInfo={getServiceInfo}
               formatDate={formatDate}
+              handlePayment={handlePayment}
             />
           )}
 
           {activeTab === 'upcoming' && (
-            <CustomerUpcoming 
+            <CustomerUpcoming
               bookings={bookings}
               setActiveRescheduleId={setActiveRescheduleId}
               setRescheduleDate={setRescheduleDate}
@@ -502,7 +614,7 @@ export default function CustomerDashboard() {
           )}
 
           {activeTab === 'history' && (
-            <CustomerHistory 
+            <CustomerHistory
               bookings={bookings}
               getServiceInfo={getServiceInfo}
               setActiveReviewId={setActiveReviewId}
@@ -511,14 +623,14 @@ export default function CustomerDashboard() {
           )}
 
           {activeTab === 'payments' && (
-            <CustomerPayments 
+            <CustomerPayments
               bookings={bookings}
               getServiceInfo={getServiceInfo}
             />
           )}
 
           {activeTab === 'reviews' && (
-            <CustomerReviews 
+            <CustomerReviews
               bookings={bookings}
               getServiceInfo={getServiceInfo}
               setActiveReviewId={setActiveReviewId}
@@ -526,7 +638,7 @@ export default function CustomerDashboard() {
           )}
 
           {activeTab === 'profile' && (
-            <CustomerProfile 
+            <CustomerProfile
               profileForm={profileForm}
               profileSaveSuccess={profileSaveSuccess}
               handleProfileSubmit={handleProfileSubmit}
@@ -536,7 +648,7 @@ export default function CustomerDashboard() {
           )}
 
           {activeTab === 'notifications' && (
-            <CustomerNotifications 
+            <CustomerNotifications
               notifications={notifications}
               handleMarkAllRead={handleMarkAllRead}
               handleToggleRead={handleToggleRead}

@@ -10,3 +10,43 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
+
+/* payment status badge style */
+.payment-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 100px;
+  letter-spacing: 0.5px;
+  margin-left: 8px;
+}
+.payment-badge.unpaid {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+.payment-badge.paid {
+  background-color: #d1fae5;
+  color: #10b981;
+}
+
+/* pay now button style */
+.btn-pay-now {
+  background-color: #10b981;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background-color 0.2s ease;
+}
+.btn-pay-now:hover {
+  background-color: #059669;
+}
