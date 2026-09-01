@@ -3,8 +3,7 @@ import { Star, Quote } from 'lucide-react';
 import './Reviews.css';
 
 export default function Reviews() {
-  // list of client feedback reviews
-  const reviewList = [
+  const reviews = [
     {
       name: 'Rishi',
       role: 'Homeowner',
@@ -37,7 +36,7 @@ export default function Reviews() {
       </div>
 
       <div className="reviews-grid">
-        {reviewList.map((review, index) => (
+        {reviews.map((review, index) => (
           <div key={index} className="review-card">
             <Quote className="quote-icon" />
             <div className="review-stars">

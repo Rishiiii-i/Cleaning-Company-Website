@@ -10,18 +10,40 @@ export default function Contact() {
     message: ''
   });
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // handle text input changes
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // handle form submission
-  const handleSubmit = (e) => {
+  // handle enquiry form submission
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulate API request submission
-    setSubmitted(true);
-    setFormData({ name: '', email: '', subject: '', message: '' });
+    setLoading(true);
+    setErrorMessage('');
+
+    try {
+      // send enquiry to backend api
+      const response = await fetch('http://localhost:5000/api/enquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (response.ok) {
+        setSubmitted(true);
+        setFormData({ name: '', email: '', subject: '', message: '' });
+      } else {
+        const data = await response.json();
+        setErrorMessage(data.error || 'Failed to send message. Please try again.');
+      }
+    } catch (err) {
+      setErrorMessage('Could not connect to server. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -147,9 +169,15 @@ export default function Contact() {
                 />
               </div>
 
-              <button type="submit" className="btn btn-primary btn-full">
+              {errorMessage && (
+                <div style={{ color: '#ef4444', fontSize: '0.9rem', marginBottom: '12px' }}>
+                  {errorMessage}
+                </div>
+              )}
+
+              <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
                 <Send size={18} />
-                <span>Send Message</span>
+                <span>{loading ? 'Sending...' : 'Send Message'}</span>
               </button>
             </form>
           )}

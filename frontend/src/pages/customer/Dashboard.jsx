@@ -376,23 +376,43 @@ export default function CustomerDashboard() {
     }
   };
 
+  // open review modal and set existing rating details
+  const handleOpenReview = (bookingId) => {
+    const targetBooking = bookings.find(b => b.id === bookingId);
+    if (targetBooking && targetBooking.rating) {
+      setRatingInput(targetBooking.rating);
+      setReviewInput(targetBooking.review || '');
+    } else {
+      setRatingInput(5);
+      setReviewInput('');
+    }
+    setActiveReviewId(bookingId);
+  };
+
   // submit customer rating and review
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
 
     try {
+      // save review to backend api
       const response = await fetch(`http://localhost:5000/api/bookings/${activeReviewId}/review`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rating: ratingInput, review: reviewInput })
+        body: JSON.stringify({
+          rating: ratingInput,
+          review: reviewInput,
+          customerName: profile.name || userLS.name || 'Customer'
+        })
       });
 
       if (response.ok) {
+        // update booking state with new review
         const updated = bookings.map((item) =>
           item.id === activeReviewId ? { ...item, rating: ratingInput, review: reviewInput } : item
         );
         setBookings(updated);
 
+        // reset modal states
         setActiveReviewId(null);
         setRatingInput(5);
         setReviewInput('');
@@ -617,7 +637,7 @@ export default function CustomerDashboard() {
             <CustomerHistory
               bookings={bookings}
               getServiceInfo={getServiceInfo}
-              setActiveReviewId={setActiveReviewId}
+              setActiveReviewId={handleOpenReview}
               formatDate={formatDate}
             />
           )}
@@ -633,7 +653,7 @@ export default function CustomerDashboard() {
             <CustomerReviews
               bookings={bookings}
               getServiceInfo={getServiceInfo}
-              setActiveReviewId={setActiveReviewId}
+              setActiveReviewId={handleOpenReview}
             />
           )}
 

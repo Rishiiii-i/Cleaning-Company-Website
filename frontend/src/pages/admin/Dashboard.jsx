@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
 import { User, LogOut, ShieldCheck, Users, Briefcase, Calendar, FileText, Star, Mail, TrendingUp } from 'lucide-react';
 import './Dashboard.css';
@@ -59,6 +59,57 @@ export default function AdminDashboard() {
   // Initial contact enquiries state
   const [enquiries, setEnquiries] = useState([]);
 
+  // fetch all bookings from database
+  const loadBookings = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/bookings');
+      if (res.ok) {
+        const data = await res.json();
+        setBookings(data.map(b => ({
+          ...b,
+          id: b.id || b._id,
+          customerName: b.userEmail ? b.userEmail.split('@')[0] : 'Customer',
+          email: b.userEmail
+        })));
+      }
+    } catch (err) {
+      console.error('Error fetching bookings:', err);
+    }
+  };
+
+  // fetch all contact enquiries from database
+  const loadEnquiries = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/enquiries');
+      if (res.ok) {
+        const data = await res.json();
+        setEnquiries(data.map(e => ({ ...e, id: e.id || e._id })));
+      }
+    } catch (err) {
+      console.error('Error fetching enquiries:', err);
+    }
+  };
+
+  // fetch all reviews from database
+  const loadReviews = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/reviews');
+      if (res.ok) {
+        const data = await res.json();
+        setReviews(data.map(r => ({ ...r, id: r.id || r._id })));
+      }
+    } catch (err) {
+      console.error('Error fetching reviews:', err);
+    }
+  };
+
+  // load live records on component mount
+  useEffect(() => {
+    loadBookings();
+    loadEnquiries();
+    loadReviews();
+  }, []);
+
   // Modal and input edit state variables
   const [editingServiceId, setEditingServiceId] = useState(null);
   const [editPriceInput, setEditPriceInput] = useState('');
@@ -80,20 +131,75 @@ export default function AdminDashboard() {
     setBookings(updated);
   };
 
-  // change booking status updates
-  const handleStatusChange = (bookingId, newStatus) => {
-    const updated = bookings.map((item) =>
-      item.id === bookingId ? { ...item, status: newStatus } : item
-    );
-    setBookings(updated);
+  // change booking status updates in database and local state
+  const handleStatusChange = async (bookingId, newStatus) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/bookings/${bookingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) {
+        const updated = bookings.map((item) =>
+          item.id === bookingId ? { ...item, status: newStatus } : item
+        );
+        setBookings(updated);
+      }
+    } catch (err) {
+      console.error('Error updating booking status:', err);
+    }
   };
 
-  // toggle enquiry resolution status
-  const handleToggleEnquiryStatus = (id) => {
-    const updated = enquiries.map(e => 
-      e.id === id ? { ...e, status: e.status === 'pending' ? 'resolved' : 'pending' } : e
-    );
-    setEnquiries(updated);
+  // toggle enquiry resolution status in database and state
+  const handleToggleEnquiryStatus = async (id) => {
+    const item = enquiries.find(e => (e.id || e._id) === id);
+    const nextStatus = item?.status === 'pending' ? 'resolved' : 'pending';
+    try {
+      const res = await fetch(`http://localhost:5000/api/enquiries/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      if (res.ok) {
+        const updated = enquiries.map(e =>
+          (e.id || e._id) === id ? { ...e, status: nextStatus } : e
+        );
+        setEnquiries(updated);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Error updating enquiry status:', err);
+      return false;
+    }
+  };
+
+  // delete enquiry from database and state
+  const handleDeleteEnquiry = async (id) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/enquiries/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        setEnquiries(enquiries.filter(e => e.id !== id));
+      }
+    } catch (err) {
+      console.error('Error deleting enquiry:', err);
+    }
+  };
+
+  // delete review from database and state
+  const handleDeleteReview = async (id) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/reviews/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        setReviews(reviews.filter(r => (r.id || r._id) !== id));
+      }
+    } catch (err) {
+      console.error('Error deleting review:', err);
+    }
   };
 
   // handle user logout request
@@ -148,11 +254,12 @@ export default function AdminDashboard() {
     setNewServiceDesc('');
   };
 
-  // calculate summary statistics for dynamic cards (disabled for layouts mode)
-  const todaysBookingsCount = 0;
-  const pendingCount = 0;
-  const completedCount = 0;
-  const totalRevenue = 0;
+  const todayDateStr = new Date().toISOString().split('T')[0];
+  const todaysBookingsCount = bookings.filter(b => b.date === todayDateStr).length;
+  const pendingCount = bookings.filter(b => b.status === 'scheduled' || b.status === 'pending').length;
+  const completedCount = bookings.filter(b => b.status === 'completed').length;
+  const totalRevenue = bookings.filter(b => b.status === 'completed').reduce((acc, b) => acc + (Number(b.price) || 0), 0);
+  const pendingEnquiriesCount = enquiries.filter(e => e.status === 'pending').length;
 
   return (
     <div className="customer-dashboard-page">
@@ -161,10 +268,10 @@ export default function AdminDashboard() {
         activeTab={activeTab}
       />
       <div className="customer-dashboard-container">
-        
+
         {/* sidebar panel layout */}
         <aside className="dashboard-sidebar">
-          
+
           <nav className="sidebar-nav">
             <p className="sidebar-nav-label">Overview</p>
             <button
@@ -223,7 +330,7 @@ export default function AdminDashboard() {
               onClick={() => setActiveTab('enquiries')}
             >
               <Mail size={18} />
-              <span>Contact Enquiries</span>
+              <span>Contact Enquiries {pendingEnquiriesCount > 0 ? `(${pendingEnquiriesCount})` : ''}</span>
             </button>
             <button
               className={`nav-item-btn ${activeTab === 'reports' ? 'active' : ''}`}
@@ -254,7 +361,7 @@ export default function AdminDashboard() {
         {/* main content display area */}
         <main className="dashboard-main-content">
           {activeTab === 'overview' && (
-            <AdminOverview 
+            <AdminOverview
               customers={customers}
               bookings={bookings}
               todaysBookingsCount={todaysBookingsCount}
@@ -270,7 +377,7 @@ export default function AdminDashboard() {
           )}
 
           {activeTab === 'services' && (
-            <AdminServices 
+            <AdminServices
               services={services}
               editingServiceId={editingServiceId}
               setEditingServiceId={setEditingServiceId}
@@ -288,7 +395,7 @@ export default function AdminDashboard() {
           )}
 
           {activeTab === 'bookings' && (
-            <AdminBookings 
+            <AdminBookings
               bookings={bookings}
               services={services}
               staff={staff}
@@ -298,7 +405,7 @@ export default function AdminDashboard() {
           )}
 
           {activeTab === 'staff' && (
-            <AdminStaff 
+            <AdminStaff
               staff={staff}
               newStaffName={newStaffName}
               setNewStaffName={setNewStaffName}
@@ -309,28 +416,30 @@ export default function AdminDashboard() {
           )}
 
           {activeTab === 'payments' && (
-            <AdminPayments 
+            <AdminPayments
               payments={payments}
               services={services}
             />
           )}
 
           {activeTab === 'reviews' && (
-            <AdminReviews 
+            <AdminReviews
               reviews={reviews}
               services={services}
+              handleDeleteReview={handleDeleteReview}
             />
           )}
 
           {activeTab === 'enquiries' && (
-            <AdminEnquiries 
+            <AdminEnquiries
               enquiries={enquiries}
               handleToggleEnquiryStatus={handleToggleEnquiryStatus}
+              handleDeleteEnquiry={handleDeleteEnquiry}
             />
           )}
 
           {activeTab === 'reports' && (
-            <AdminReports 
+            <AdminReports
               bookings={bookings}
               staff={staff}
               completedCount={completedCount}

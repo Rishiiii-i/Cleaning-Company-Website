@@ -37,6 +37,13 @@ export default function CustomerReviews({
                         ))}
                       </div>
                       <p className="review-text-italic">"{booking.review || 'no feedback written.'}"</p>
+                      <button
+                        onClick={() => setActiveReviewId(booking.id)}
+                        className="btn btn-secondary btn-small btn-rating-trigger"
+                      >
+                        <Star size={14} />
+                        <span>Edit Review</span>
+                      </button>
                     </div>
                   ) : (
                     <div className="unreviewed-state-row">
@@ -56,7 +63,7 @@ export default function CustomerReviews({
           })
         ) : (
           <div className="empty-state-banner">
-            <p>No reviews are found.</p>
+            <p>No completed services found yet. Once a cleaning is completed, you can leave your rating and review here.</p>
           </div>
         )}
       </div>
