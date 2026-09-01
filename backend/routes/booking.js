@@ -1,17 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const Booking = require('../models/Booking');
+const Review = require('../models/Review');
 
-// get all bookings for a user by email
+// get all bookings or filter by user email
 router.get('/bookings', async (req, res) => {
   try {
     const { email } = req.query;
-    // check if email was passed
-    if (!email) {
-      return res.status(400).json({ error: 'User email is required' });
-    }
-    // find bookings matching user email
-    const bookings = await Booking.find({ userEmail: email }).sort({ createdAt: -1 });
+    // filter by email if given or return all bookings
+    const filter = email ? { userEmail: email } : {};
+    const bookings = await Booking.find(filter).sort({ createdAt: -1 });
     res.json(bookings);
   } catch (err) {
     res.status(500).json({ error: 'Server error fetching bookings' });
@@ -83,16 +81,32 @@ router.put('/bookings/:id', async (req, res) => {
 router.put('/bookings/:id/review', async (req, res) => {
   try {
     const { id } = req.params;
-    const { rating, review } = req.body;
+    const { rating, review, customerName } = req.body;
     // find booking by id
     const booking = await Booking.findById(id);
     if (!booking) {
       return res.status(404).json({ error: 'Booking not found' });
     }
     // save customer rating and review
-    booking.rating = rating;
+    booking.rating = Number(rating);
     booking.review = review;
     await booking.save();
+
+    // sync review with Review collection
+    await Review.findOneAndUpdate(
+      { bookingId: booking._id },
+      {
+        bookingId: booking._id,
+        userEmail: booking.userEmail,
+        customerName: customerName || booking.userEmail.split('@')[0],
+        serviceType: booking.serviceType,
+        rating: Number(rating),
+        comment: review,
+        date: booking.date || new Date().toISOString().split('T')[0]
+      },
+      { upsert: true, new: true }
+    );
+
     res.json(booking);
   } catch (err) {
     res.status(500).json({ error: 'Server error adding review' });

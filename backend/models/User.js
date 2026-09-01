@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-// define user database schema
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -19,7 +18,7 @@ const userSchema = new mongoose.Schema({
     required: false
   }
 }, {
-  timestamps: true // track created and updated times
+  timestamps: true
 });
 
 module.exports = mongoose.model('User', userSchema);

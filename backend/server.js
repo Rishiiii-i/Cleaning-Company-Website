@@ -7,6 +7,10 @@ const User = require('./models/User');
 const bookingRoutes = require('./routes/booking');
 // import custom payment routes
 const paymentRoutes = require('./routes/payment');
+// import custom enquiry routes
+const enquiryRoutes = require('./routes/enquiry');
+// import custom review routes
+const reviewRoutes = require('./routes/review');
 
 // initialize database connection
 require('./db');
@@ -25,6 +29,10 @@ app.use(express.json());
 app.use('/api', bookingRoutes);
 // mount payment routes middleware
 app.use('/api', paymentRoutes);
+// mount enquiry routes middleware
+app.use('/api', enquiryRoutes);
+// mount review routes middleware
+app.use('/api', reviewRoutes);
 
 // basic status check route
 app.get('/api/status', (req, res) => {
