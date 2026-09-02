@@ -11,6 +11,12 @@ const paymentRoutes = require('./routes/payment');
 const enquiryRoutes = require('./routes/enquiry');
 // import custom review routes
 const reviewRoutes = require('./routes/review');
+// import custom service routes
+const serviceRoutes = require('./routes/service');
+// import custom customer routes
+const customerRoutes = require('./routes/customer');
+// import custom staff routes
+const staffRoutes = require('./routes/staff');
 
 // initialize database connection
 require('./db');
@@ -33,6 +39,12 @@ app.use('/api', paymentRoutes);
 app.use('/api', enquiryRoutes);
 // mount review routes middleware
 app.use('/api', reviewRoutes);
+// mount service routes middleware
+app.use('/api', serviceRoutes);
+// mount customer routes middleware
+app.use('/api', customerRoutes);
+// mount staff routes middleware
+app.use('/api', staffRoutes);
 
 // basic status check route
 app.get('/api/status', (req, res) => {
