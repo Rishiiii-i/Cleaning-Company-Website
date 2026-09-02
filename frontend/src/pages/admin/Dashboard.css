@@ -447,3 +447,19 @@
     padding: 20px 16px;
   }
 }
+
+/* white background and compact spacing rules */
+.customer-dashboard-page {
+  background-color: #ffffff !important;
+}
+.dashboard-main-content {
+  background-color: #ffffff !important;
+  padding: 24px 32px 36px !important;
+}
+.dashboard-panel,
+.reports-section-card {
+  background-color: #ffffff !important;
+}
+.dashboard-topbar {
+  margin: 0 auto 18px !important;
+}

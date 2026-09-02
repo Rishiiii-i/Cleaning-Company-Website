@@ -71,6 +71,16 @@ export default function AdminDashboard() {
           customerName: b.userEmail ? b.userEmail.split('@')[0] : 'Customer',
           email: b.userEmail
         })));
+        // set payments from bookings
+        setPayments(data.map(b => ({
+          id: `PAY-${String(b.id || b._id).slice(-5).toUpperCase()}`,
+          bookingId: b.id || b._id,
+          customerName: b.userEmail ? b.userEmail.split('@')[0] : 'Customer',
+          serviceType: b.serviceType,
+          amount: b.price,
+          date: b.date,
+          status: b.paymentStatus || 'paid'
+        })));
       }
     } catch (err) {
       console.error('Error fetching bookings:', err);
@@ -103,11 +113,55 @@ export default function AdminDashboard() {
     }
   };
 
+  // load services from database
+  const loadServices = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/services');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.length > 0) {
+          setServices(data.map(s => ({ ...s, id: s.id || s._id })));
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // load customers from database
+  const loadCustomers = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/customers');
+      if (res.ok) {
+        const data = await res.json();
+        setCustomers(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // load staff from database
+  const loadStaff = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/staff');
+      if (res.ok) {
+        const data = await res.json();
+        setStaff(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   // load live records on component mount
   useEffect(() => {
     loadBookings();
     loadEnquiries();
     loadReviews();
+    loadServices();
+    loadCustomers();
+    loadStaff();
   }, []);
 
   // Modal and input edit state variables
@@ -253,6 +307,125 @@ export default function AdminDashboard() {
     setNewServicePrice('');
     setNewServiceDesc('');
   };
+
+  // delete service from database
+  const handleDeleteService = async (id) => {
+    try {
+      await fetch(`http://localhost:5000/api/services/${id}`, { method: 'DELETE' });
+      setServices(services.filter(s => s.id !== id));
+    } catch (err) {
+      setServices(services.filter(s => s.id !== id));
+    }
+  };
+
+  // add new customer
+  const handleAddCustomer = async (data) => {
+    try {
+      const res = await fetch('http://localhost:5000/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setCustomers([...customers, created]);
+      } else {
+        setCustomers([...customers, { ...data, id: `c-${Date.now()}` }]);
+      }
+    } catch (err) {
+      setCustomers([...customers, { ...data, id: `c-${Date.now()}` }]);
+    }
+  };
+
+  // delete customer
+  const handleDeleteCustomer = async (id) => {
+    try {
+      await fetch(`http://localhost:5000/api/customers/${id}`, { method: 'DELETE' });
+      setCustomers(customers.filter(c => c.id !== id));
+    } catch (err) {
+      setCustomers(customers.filter(c => c.id !== id));
+    }
+  };
+
+  // delete staff member
+  const handleDeleteStaff = async (id) => {
+    try {
+      await fetch(`http://localhost:5000/api/staff/${id}`, { method: 'DELETE' });
+      setStaff(staff.filter(s => s.id !== id));
+    } catch (err) {
+      setStaff(staff.filter(s => s.id !== id));
+    }
+  };
+
+  // change staff status
+  const handleStaffStatusChange = async (id) => {
+    const member = staff.find(s => s.id === id);
+    const nextStatus = member?.status === 'active' ? 'inactive' : 'active';
+    try {
+      await fetch(`http://localhost:5000/api/staff/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      setStaff(staff.map(s => s.id === id ? { ...s, status: nextStatus } : s));
+    } catch (err) {
+      setStaff(staff.map(s => s.id === id ? { ...s, status: nextStatus } : s));
+    }
+  };
+
+  // change payment status
+  const handlePaymentStatusChange = (id, newStatus) => {
+    setPayments(payments.map(p => p.id === id ? { ...p, status: newStatus } : p));
+  };
+
+  // sync payment status update to database
+  const syncPaymentStatus = async (id, newStatus, optionalBookingId) => {
+    const payment = payments.find(p => p.id === id || p.bookingId === id);
+    const bookingId = optionalBookingId || payment?.bookingId || id;
+    try {
+      if (bookingId && !String(bookingId).startsWith('PAY-')) {
+        await fetch(`http://localhost:5000/api/bookings/${bookingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentStatus: newStatus })
+        });
+      }
+      setBookings(prev => prev.map(b => (b.id === bookingId || b._id === bookingId) ? { ...b, paymentStatus: newStatus } : b));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // attach admin handlers for child components
+  if (typeof window !== 'undefined') {
+    window.adminHandlers = {
+      handleDeleteService,
+      handleAddCustomer,
+      handleDeleteCustomer,
+      handleDeleteStaff,
+      handleStaffStatusChange,
+      handlePaymentStatusChange: async (id, newStatus, optionalBookingId) => {
+        handlePaymentStatusChange(id, newStatus);
+        await syncPaymentStatus(id, newStatus, optionalBookingId);
+      },
+      loadStaff,
+      handleAddStaff: async (staffData) => {
+        try {
+          const res = await fetch('http://localhost:5000/api/staff', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(staffData)
+          });
+          if (res.ok) {
+            const saved = await res.json();
+            setStaff(prev => [...prev, saved]);
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    };
+  }
 
   const todayDateStr = new Date().toISOString().split('T')[0];
   const todaysBookingsCount = bookings.filter(b => b.date === todayDateStr).length;

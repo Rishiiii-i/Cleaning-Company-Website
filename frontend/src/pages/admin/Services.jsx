@@ -1,5 +1,6 @@
 import React from 'react';
 import { Plus, Edit2, Check } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import './Services.css';
 
 export default function AdminServices({
@@ -17,6 +18,9 @@ export default function AdminServices({
   handleSaveServicePrice,
   handleAddServiceSubmit
 }) {
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const handleDeleteService = arguments[0]?.handleDeleteService || (typeof window !== 'undefined' && window.adminHandlers?.handleDeleteService);
+  services = (services || []).filter(s => s && s.name && s.name.toLowerCase().includes(searchTerm.toLowerCase()));
   return (
     <div className="dashboard-panel">
       <div className="reports-section-card">
@@ -30,6 +34,14 @@ export default function AdminServices({
           {/* list of existing services */}
           <div className="services-admin-list">
             <h4>Active Service Options</h4>
+            {/* search services input */}
+            <input
+              type="text"
+              placeholder="search services..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="service-search-bar"
+            />
             <div className="admin-service-cards-stack">
               {services.map((service) => (
                 <div key={service.id} className="admin-service-edit-card">
@@ -64,6 +76,18 @@ export default function AdminServices({
                         >
                           <Edit2 size={14} />
                           <span>Edit</span>
+                        </button>
+                        {/* delete service button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const fn = handleDeleteService || (typeof window !== 'undefined' && window.adminHandlers?.handleDeleteService);
+                            if (fn) fn(service.id || service._id);
+                          }}
+                          className="btn-delete-price"
+                        >
+                          <Trash2 size={14} />
+                          <span>Delete</span>
                         </button>
                       </div>
                     )}

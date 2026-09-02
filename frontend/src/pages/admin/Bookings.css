@@ -48,3 +48,38 @@
 .svc-price-meta {
   color: var(--primary);
 }
+
+/* bookings filter and search styles */
+.booking-filter-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+.booking-search-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: white;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.booking-search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+.booking-status-filter {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+  font-size: 0.9rem;
+  color: var(--secondary);
+  cursor: pointer;
+  outline: none;
+}
+.booking-status-filter:focus {
+  border-color: var(--primary);
+}

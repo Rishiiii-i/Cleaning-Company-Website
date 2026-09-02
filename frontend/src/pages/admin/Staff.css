@@ -61,3 +61,126 @@
   align-items: center;
   gap: 8px;
 }
+
+/* staff search and button styles */
+.staff-search-bar {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: white;
+  margin-top: 12px;
+  margin-bottom: 8px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.staff-search-bar:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+.btn-delete-price {
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #ef4444;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.btn-delete-price:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.btn-edit-price {
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  color: var(--primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.btn-edit-price:hover {
+  background: #dbeafe;
+}
+
+/* staff directory full width and modal form styling */
+.staff-admin-grid {
+  display: block;
+  width: 100%;
+}
+.staff-directory-list-card {
+  width: 100%;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+.staff-directory-list-card h4 {
+  display: none;
+}
+.staff-search-bar {
+  flex: 1;
+  max-width: 420px;
+  margin-bottom: 0;
+}
+.staff-admin-grid .admin-service-form-card {
+  display: none;
+}
+.staff-admin-grid .admin-service-form-card.staff-form-modal-open {
+  display: block;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  width: 90%;
+  max-width: 480px;
+  background: #ffffff;
+  box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.12), 0 0 0 9999px rgba(255, 255, 255, 0.88);
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  padding: 28px;
+}
+.staff-admin-grid .admin-service-form-card.staff-form-modal-open .btn-close-form {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: var(--text-light);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+.staff-admin-grid .admin-service-form-card.staff-form-modal-open .btn-close-form:hover {
+  background: #f1f5f9;
+  color: var(--secondary);
+}
+
+/* white background and compact spacing */
+.reports-section-card {
+  background: #ffffff !important;
+  padding: 24px 28px;
+}
+.customer-toolbar-row {
+  margin-top: 4px;
+  margin-bottom: 12px;
+}

@@ -8,12 +8,50 @@ export default function AdminBookings({
   handleAssignStaff,
   handleStatusChange
 }) {
+  // search bookings text
+  const [search, setSearch] = React.useState('');
+  // status filter text
+  const [statusFilter, setStatusFilter] = React.useState('all');
+  // safe fallback for staff and services
+  staff = staff || [];
+  services = services || [];
+  // filter bookings list
+  bookings = (bookings || []).filter((b) => {
+    if (!b) return false;
+    const nameStr = (b.customerName || b.userEmail || '').toLowerCase();
+    const idStr = String(b.id || b._id || '').toLowerCase();
+    const q = search.toLowerCase();
+    const matchSearch = nameStr.includes(q) || idStr.includes(q);
+    const matchStatus = statusFilter === 'all' || b.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
   return (
     <div className="dashboard-panel">
       <div className="reports-section-card">
         <div className="panel-header">
           <h3>Service Bookings Administration</h3>
           <p>Assign staff cleaners to client bookings, confirm deposits, and approve completed visits.</p>
+        </div>
+
+        {/* search and filter row */}
+        <div className="booking-filter-row">
+          <input
+            type="text"
+            placeholder="search bookings..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="booking-search-input"
+          />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="booking-status-filter"
+          >
+            <option value="all">All Status</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
         </div>
 
         {bookings.length > 0 ? (

@@ -47,3 +47,52 @@
   font-size: 1.35rem;
   color: var(--secondary);
 }
+
+/* hide empty reports banner when data exists */
+.reports-section-card:has(.monthly-chart-box) .reports-empty-banner,
+.reports-section-card:has(.admin-table-wrapper) .reports-empty-banner {
+  display: none !important;
+}
+
+/* monthly chart styling */
+.monthly-chart-box {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 12px;
+}
+.monthly-chart-bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.monthly-chart-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.88rem;
+}
+.monthly-chart-meta strong {
+  color: var(--secondary);
+}
+.monthly-chart-meta span {
+  color: var(--primary);
+  font-weight: 600;
+}
+.monthly-bar-track {
+  width: 100%;
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.monthly-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
+  border-radius: 6px;
+  transition: width 0.4s ease;
+}
