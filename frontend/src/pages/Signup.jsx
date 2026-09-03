@@ -17,6 +17,16 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // reset previous login session on signup page load
+  React.useEffect(() => {
+    try {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
   // handle text input change
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });

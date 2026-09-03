@@ -1,5 +1,6 @@
 import React from 'react';
 import { Calendar, Clock, MapPin, Star } from 'lucide-react';
+import { User as StaffIcon } from 'lucide-react';
 import './History.css';
 
 export default function CustomerHistory({
@@ -29,6 +30,12 @@ export default function CustomerHistory({
                     <span><Calendar size={14} /> {formatDate(booking.date)}</span>
                     <span><Clock size={14} /> {booking.time}</span>
                     <span><MapPin size={14} /> {booking.address}</span>
+                    {/* show assigned cleaner badge */}
+                    {booking.assignedStaff && (
+                      <span className="booking-staff-tag">
+                        <StaffIcon size={14} /> Staff: <strong>{booking.assignedStaff}</strong>
+                      </span>
+                    )}
                   </div>
                 </div>
 

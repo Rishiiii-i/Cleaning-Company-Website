@@ -1,5 +1,7 @@
 import React from 'react';
 import { Home, Calendar, Clock, CircleCheck, AlertCircle, MapPin, ChevronRight, ArrowRight } from 'lucide-react';
+// import staff user icon
+import { User as StaffIcon } from 'lucide-react';
 import './Overview.css';
 
 export default function CustomerOverview({ 
@@ -74,6 +76,12 @@ export default function CustomerOverview({
                     <span className="meta-tag"><Calendar size={14} /> {formatDate(nextBooking.date)}</span>
                     <span className="meta-tag"><Clock size={14} /> {nextBooking.time}</span>
                     <span className="meta-tag"><MapPin size={14} /> {nextBooking.address}</span>
+                    {/* show assigned cleaner badge */}
+                    {nextBooking.assignedStaff && (
+                      <span className="meta-tag" style={{ color: '#0369a1', fontWeight: 600 }}>
+                        <StaffIcon size={14} /> Staff: {nextBooking.assignedStaff}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="next-booking-price">

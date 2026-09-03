@@ -30,6 +30,34 @@ export default function AdminDashboard() {
   };
   const userLS = getUserLS();
 
+  // check admin login authorization state
+  const [isAdminAuthorized, setIsAdminAuthorized] = useState(() => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+      const user = userStr ? JSON.parse(userStr) : null;
+      return Boolean(token && user && user.email === 'admin@gmail.com');
+    } catch (e) {
+      return false;
+    }
+  });
+
+  // verify admin login and redirect to login if unauthorized
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      if (!token || !user || user.email !== 'admin@gmail.com') {
+        setIsAdminAuthorized(false);
+        window.location.href = '/login';
+      }
+    } catch (err) {
+      setIsAdminAuthorized(false);
+      window.location.href = '/login';
+    }
+  }, []);
+
   // Dashboard active tab state
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -183,6 +211,12 @@ export default function AdminDashboard() {
       item.id === bookingId ? { ...item, assignedStaff: staffName } : item
     );
     setBookings(updated);
+    // persist assigned staff in database
+    fetch(`http://localhost:5000/api/bookings/${bookingId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assignedStaff: staffName })
+    }).catch(err => console.error(err));
   };
 
   // change booking status updates in database and local state
@@ -433,6 +467,11 @@ export default function AdminDashboard() {
   const completedCount = bookings.filter(b => b.status === 'completed').length;
   const totalRevenue = bookings.filter(b => b.status === 'completed').reduce((acc, b) => acc + (Number(b.price) || 0), 0);
   const pendingEnquiriesCount = enquiries.filter(e => e.status === 'pending').length;
+
+  // return null if admin is not authorized
+  if (!isAdminAuthorized) {
+    return null;
+  }
 
   return (
     <div className="customer-dashboard-page">

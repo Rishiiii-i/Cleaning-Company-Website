@@ -1,5 +1,6 @@
 import React from 'react';
 import { Calendar, Clock, MapPin } from 'lucide-react';
+import { User as StaffIcon } from 'lucide-react';
 import './Upcoming.css';
 
 export default function CustomerUpcoming({
@@ -31,6 +32,16 @@ export default function CustomerUpcoming({
                     <span><Calendar size={14} /> {formatDate(booking.date)}</span>
                     <span><Clock size={14} /> {booking.time}</span>
                     <span><MapPin size={14} /> {booking.address}</span>
+                    {/* show assigned cleaner badge */}
+                    {booking.assignedStaff ? (
+                      <span className="booking-staff-tag">
+                        <StaffIcon size={14} /> Staff: <strong>{booking.assignedStaff}</strong>
+                      </span>
+                    ) : (
+                      <span className="booking-staff-tag unassigned">
+                        <StaffIcon size={14} /> Staff: <em>Assigning soon</em>
+                      </span>
+                    )}
                   </div>
                   {booking.notes && <p className="booking-card-notes"><strong>instructions: </strong>{booking.notes}</p>}
                 </div>

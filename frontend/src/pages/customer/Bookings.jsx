@@ -1,5 +1,7 @@
 import React from 'react';
 import { Calendar, CheckCircle, Shield, Search, Clock } from 'lucide-react';
+// import staff user icon
+import { User as StaffIcon } from 'lucide-react';
 import './Bookings.css';
 
 export default function CustomerBookings({
@@ -155,6 +157,16 @@ export default function CustomerBookings({
                     <div className="booking-card-meta">
                       <span><Calendar size={14} /> {formatDate(booking.date)}</span>
                       <span><Clock size={14} /> {booking.time}</span>
+                      {/* show assigned cleaner badge */}
+                      {booking.assignedStaff ? (
+                        <span className="booking-staff-tag">
+                          <StaffIcon size={14} /> Staff: <strong>{booking.assignedStaff}</strong>
+                        </span>
+                      ) : (
+                        <span className="booking-staff-tag unassigned">
+                          <StaffIcon size={14} /> Staff: <em>Assigning soon</em>
+                        </span>
+                      )}
                     </div>
                   </div>
 

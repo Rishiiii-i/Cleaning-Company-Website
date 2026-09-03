@@ -33,6 +33,27 @@ export default function Navbar({ portalName, activeTab, rightActions }) {
     }
   };
 
+  // keep user in current dashboard when clicking logo
+  React.useEffect(() => {
+    const logoLink = document.querySelector('.navbar-logo');
+    if (!logoLink) return;
+    const onLogoClick = (e) => {
+      const path = window.location.pathname;
+      const isDash = Boolean(portalName) || path === '/dashboard' || path.startsWith('/dashboard') || path === '/customer' || path.startsWith('/customer') || path === '/admin' || path.startsWith('/admin');
+      if (isDash) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (path === '/admin' || path.startsWith('/admin') || portalName === 'Admin portal') {
+          navigate('/admin');
+        } else {
+          navigate('/customer');
+        }
+      }
+    };
+    logoLink.addEventListener('click', onLogoClick, true);
+    return () => logoLink.removeEventListener('click', onLogoClick, true);
+  }, [portalName, navigate]);
+
   // handle logout request
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -49,6 +70,20 @@ export default function Navbar({ portalName, activeTab, rightActions }) {
         </Link>
 
         {isDashboard && (
+          <div className="navbar-portal-title">
+            <span className="portal-eyebrow">{portalName}</span>
+            <h2 className="portal-heading">
+              {activeTab === 'overview'
+                ? 'Dashboard'
+                : activeTab
+                ? activeTab.charAt(0).toUpperCase() + activeTab.slice(1)
+                : ''}
+            </h2>
+          </div>
+        )}
+
+        {/* render portal title if inside customer portal */}
+        {(!isDashboard && Boolean(portalName)) && (
           <div className="navbar-portal-title">
             <span className="portal-eyebrow">{portalName}</span>
             <h2 className="portal-heading">
@@ -99,6 +134,17 @@ export default function Navbar({ portalName, activeTab, rightActions }) {
         )}
 
         {isDashboard && (
+          <div className="dashboard-nav-actions">
+            {rightActions}
+            <div className="dashboard-nav-user">
+              <User size={17} />
+              <span>{user.name || 'Customer'}</span>
+            </div>
+          </div>
+        )}
+
+        {/* render dashboard actions if inside customer portal */}
+        {(!isDashboard && Boolean(portalName)) && (
           <div className="dashboard-nav-actions">
             {rightActions}
             <div className="dashboard-nav-user">

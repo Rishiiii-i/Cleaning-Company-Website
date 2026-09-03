@@ -29,6 +29,50 @@ export default function CustomerDashboard() {
   };
   const userLS = getUserLS();
 
+  // check customer login authorization state
+  const [isCustomerAuthorized, setIsCustomerAuthorized] = useState(() => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+      const user = userStr ? JSON.parse(userStr) : null;
+      const email = (user?.email || '').toLowerCase();
+      return Boolean(token && user && email !== 'admin@gmail.com' && user.role !== 'admin');
+    } catch (e) {
+      return false;
+    }
+  });
+
+  // redirect to login page if unauthorized
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const email = (user?.email || '').toLowerCase();
+      if (!token || !user || email === 'admin@gmail.com' || user.role === 'admin') {
+        setIsCustomerAuthorized(false);
+        window.location.href = '/login';
+      }
+    } catch (err) {
+      setIsCustomerAuthorized(false);
+      window.location.href = '/login';
+    }
+  }, []);
+
+  // redirect dashboard url to customer url
+  useEffect(() => {
+    if (window.location.pathname === '/dashboard' || window.location.pathname.startsWith('/dashboard/')) {
+      window.history.replaceState(null, '', window.location.pathname.replace('/dashboard', '/customer'));
+    }
+  }, []);
+
+  // restore customer url path in browser address bar
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.pathname !== '/customer') {
+      window.history.replaceState(null, '', '/customer');
+    }
+  });
+
   // Active navigation tab state
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -468,6 +512,15 @@ export default function CustomerDashboard() {
     const isSearchMatch = idString.includes(query) || serviceName.includes(query);
     return isStatusMatch && isSearchMatch;
   });
+
+  // return null if customer is not authorized
+  if (!isCustomerAuthorized) {
+    return null;
+  }
+
+  if (typeof window !== 'undefined' && (window.location.pathname === '/customer' || window.location.pathname.startsWith('/customer/'))) {
+    window.history.replaceState(null, '', '/dashboard');
+  }
 
   return (
     <div className="customer-dashboard-page">

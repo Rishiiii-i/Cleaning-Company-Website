@@ -67,3 +67,129 @@
 .hidden-file-input {
   display: none;
 }
+
+/* profile settings container width */
+.profile-form-container {
+  max-width: 860px;
+}
+
+/* display profile photo and 2fa security cards side by side */
+.profile-top-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: stretch;
+  margin-bottom: 24px;
+}
+
+.profile-photo-uploader-container {
+  display: flex !important;
+  align-items: center;
+  gap: 16px;
+  min-height: 110px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 0 !important;
+  box-sizing: border-box;
+}
+
+.two-factor-beside-box {
+  display: flex !important;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 110px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 0 !important;
+  box-sizing: border-box;
+}
+
+.two-factor-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.two-factor-title {
+  margin: 0 0 2px;
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+.two-factor-description {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-light);
+  line-height: 1.35;
+}
+
+.two-factor-toggle-switch {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.two-factor-toggle-switch.active {
+  background-color: #0284c7;
+}
+
+.two-factor-toggle-switch:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.two-factor-toggle-knob {
+  display: block;
+  width: 22px;
+  height: 22px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+  transform: translateX(0);
+}
+
+.two-factor-toggle-switch.active .two-factor-toggle-knob {
+  transform: translateX(22px);
+}
+
+.two-factor-countdown-banner {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.countdown-pulse-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #ef4444;
+  border-radius: 50%;
+}
+
+@media (max-width: 768px) {
+  .profile-top-grid {
+    grid-template-columns: 1fr;
+  }
+}

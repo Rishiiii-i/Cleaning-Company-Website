@@ -19,9 +19,12 @@ export default function App() {
         
         {/* client dashboard control route */}
         <Route path="/dashboard" element={<CustomerDashboard />} />
-        
+        <Route path="/dashboard/*" element={<CustomerDashboard />} />
+        <Route path="/customer" element={<CustomerDashboard />} />
+        <Route path="/customer/*" element={<CustomerDashboard />} />
         {/* administrator operation route */}
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/*" element={<AdminDashboard />} />
       </Routes>
     </Router>
   );

@@ -302,3 +302,13 @@
     display: none;
   }
 }
+
+/* hide public navigation links inside customer and admin dashboards */
+.customer-dashboard-page .nav-links,
+.admin-dashboard-page .nav-links,
+.customer-dashboard-page .mobile-toggle,
+.admin-dashboard-page .mobile-toggle,
+.customer-dashboard-page .mobile-menu,
+.admin-dashboard-page .mobile-menu {
+  display: none !important;
+}

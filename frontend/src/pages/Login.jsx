@@ -8,6 +8,7 @@ import heroImg from '../assets/hero.jpg';
 import logoPng from '../assets/logo.png';
 import googlePng from '../assets/google.png';
 import './Login.css';
+import OtpModal from '../components/OtpModal';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -15,6 +16,29 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [pending2FAEmail, setPending2FAEmail] = useState('');
+  const [pendingAuthData, setPendingAuthData] = useState(null);
+
+  // handle successful two factor verification
+  const handleOtpSuccess = (data) => {
+    setShowOtpModal(false);
+    const tokenToSave = data.token || pendingAuthData?.token;
+    const userToSave = data.user || pendingAuthData?.user;
+    if (tokenToSave) localStorage.setItem('token', tokenToSave);
+    if (userToSave) localStorage.setItem('user', JSON.stringify(userToSave));
+    navigate('/customer');
+  };
+
+  // reset previous login session on login page load
+  React.useEffect(() => {
+    try {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
 
   // handle text input change
   const handleChange = (e) => {
@@ -80,6 +104,36 @@ export default function Login() {
         throw new Error(syncData.error || 'failed to sync user details to database');
       }
 
+      // check if user has two factor authentication enabled
+      if (userCredential.user.email !== 'admin@gmail.com') {
+        try {
+          const statusRes = await fetch(`http://localhost:5000/api/2fa/status?email=${encodeURIComponent(userCredential.user.email)}`);
+          if (statusRes.ok) {
+            const statusData = await statusRes.json();
+            if (statusData.twoFactorEnabled) {
+              await fetch('http://localhost:5000/api/2fa/send-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: userCredential.user.email })
+              });
+              setPending2FAEmail(userCredential.user.email);
+              setPendingAuthData({
+                token,
+                user: {
+                  name: userCredential.user.displayName || 'User',
+                  email: userCredential.user.email
+                }
+              });
+              setShowOtpModal(true);
+              setLoading(false);
+              return;
+            }
+          }
+        } catch (twoFactorErr) {
+          console.error(twoFactorErr);
+        }
+      }
+
       localStorage.setItem('token', token);
       localStorage.setItem(
         'user',
@@ -129,6 +183,36 @@ export default function Login() {
         throw new Error(syncData.error || 'failed to sync user details to database');
       }
 
+      // check if google user has two factor authentication enabled
+      if (userCredential.user.email !== 'admin@gmail.com') {
+        try {
+          const statusRes = await fetch(`http://localhost:5000/api/2fa/status?email=${encodeURIComponent(userCredential.user.email)}`);
+          if (statusRes.ok) {
+            const statusData = await statusRes.json();
+            if (statusData.twoFactorEnabled) {
+              await fetch('http://localhost:5000/api/2fa/send-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: userCredential.user.email })
+              });
+              setPending2FAEmail(userCredential.user.email);
+              setPendingAuthData({
+                token,
+                user: {
+                  name: userCredential.user.displayName || 'User',
+                  email: userCredential.user.email
+                }
+              });
+              setShowOtpModal(true);
+              setLoading(false);
+              return;
+            }
+          }
+        } catch (twoFactorErr) {
+          console.error(twoFactorErr);
+        }
+      }
+
       localStorage.setItem('token', token);
       localStorage.setItem(
         'user',
@@ -147,8 +231,8 @@ export default function Login() {
     } catch (err) {
       // ignore popup cancellation errors initiated by the user
       if (
-        err.code === 'auth/user-cancelled' || 
-        err.code === 'auth/popup-closed-by-user' || 
+        err.code === 'auth/user-cancelled' ||
+        err.code === 'auth/popup-closed-by-user' ||
         err.code === 'auth/cancelled-popup-request'
       ) {
         return;
@@ -166,7 +250,7 @@ export default function Login() {
       {/* Left Column: Image and Text */}
       <div className="auth-promo-side" style={{ backgroundImage: `url(${heroImg})` }}>
         <div className="auth-promo-overlay"></div>
-        <motion.div 
+        <motion.div
           className="auth-promo-content"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -220,7 +304,7 @@ export default function Login() {
             <span>GlowHome</span>
           </Link>
         </div>
-        <motion.div 
+        <motion.div
           className="auth-card-split"
           initial={{ opacity: 0, y: 25, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -234,7 +318,7 @@ export default function Login() {
           <p className="auth-subtitle">login to manage your cleaning appointments</p>
 
           {error && (
-            <motion.div 
+            <motion.div
               className="auth-error"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -307,9 +391,9 @@ export default function Login() {
               <span style={{ height: '1px', backgroundColor: 'var(--border)', flexGrow: 1 }}></span>
             </div>
 
-            <button 
-              type="button" 
-              onClick={handleGoogleSignIn} 
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
               className="btn btn-secondary btn-full"
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
             >
@@ -324,6 +408,18 @@ export default function Login() {
           </div>
         </motion.div>
       </div>
+
+      {/* two factor authentication otp modal */}
+      {showOtpModal && (
+        <OtpModal
+          email={pending2FAEmail}
+          onVerifySuccess={handleOtpSuccess}
+          onClose={() => {
+            setShowOtpModal(false);
+            setLoading(false);
+          }}
+        />
+      )}
     </div>
   );
 }
