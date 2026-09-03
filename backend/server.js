@@ -17,6 +17,8 @@ const serviceRoutes = require('./routes/service');
 const customerRoutes = require('./routes/customer');
 // import custom staff routes
 const staffRoutes = require('./routes/staff');
+// import custom otp authentication routes
+const otpRoutes = require('./routes/otp');
 
 // initialize database connection
 require('./db');
@@ -45,6 +47,8 @@ app.use('/api', serviceRoutes);
 app.use('/api', customerRoutes);
 // mount staff routes middleware
 app.use('/api', staffRoutes);
+// mount otp routes middleware
+app.use('/api', otpRoutes);
 
 // basic status check route
 app.get('/api/status', (req, res) => {
@@ -99,6 +103,21 @@ app.post('/api/login', async (req, res) => {
     // check plain text password match
     if (user.password !== password) {
       return res.status(400).json({ error: 'Invalid email or password' });
+    }
+
+    // dispatch 2fa verification code if enabled
+    if (user.twoFactorEnabled) {
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const Otp = require('./models/Otp');
+      const { sendOtpEmail } = require('./utils/mailer');
+      await Otp.deleteMany({ email: user.email.toLowerCase() });
+      await Otp.create({
+        email: user.email.toLowerCase(),
+        otp: code,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000)
+      });
+      await sendOtpEmail(user.email, code, user.name);
+      return res.json({ requires2FA: true, email: user.email, name: user.name });
     }
 
     // generate jwt token

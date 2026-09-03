@@ -69,6 +69,9 @@ router.put('/bookings/:id', async (req, res) => {
     if (time) {
       booking.time = time;
     }
+    if (req.body.assignedStaff !== undefined) {
+      booking.assignedStaff = req.body.assignedStaff;
+    }
     // save updated booking
     await booking.save();
     res.json(booking);

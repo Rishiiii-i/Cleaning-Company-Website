@@ -52,5 +52,11 @@ const bookingSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+bookingSchema.add({
+  assignedStaff: {
+    type: String,
+    default: ''
+  }
+});
 
 module.exports = mongoose.model('Booking', bookingSchema);
