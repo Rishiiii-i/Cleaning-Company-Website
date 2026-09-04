@@ -2,6 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin } from 'lucide-react';
 import './Footer.css';
+import SocialLinks from './social';
+import PolicyLinks from './policy';
 
 export default function Footer() {
   const handleHomeClick = (e) => {
@@ -17,6 +19,7 @@ export default function Footer() {
         <div className="footer-info">
           <h3>GlowHome</h3>
           <p>We provide professional home and office cleaning services with a focus on quality and customer satisfaction.</p>
+          <SocialLinks />
         </div>
         <div className="footer-contact">
           <h4>Contact Us</h4>
@@ -35,9 +38,14 @@ export default function Footer() {
             <li><Link to="/signup">Book Now</Link></li>
           </ul>
         </div>
+        <div className="footer-policy">
+          <h4>Policies & Terms</h4>
+          <PolicyLinks />
+        </div>
       </div>
       <div className="footer-bottom">
         <p>&copy; 2026 GlowHome. All rights reserved.</p>
+        <PolicyLinks isCompact={true} />
       </div>
     </footer>
   );

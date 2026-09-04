@@ -6,11 +6,13 @@ import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
 import CustomerDashboard from './pages/customer/Dashboard';
 import AdminDashboard from './pages/admin/Dashboard';
+import Session from './components/session';
 
 // main application routing component
 export default function App() {
   return (
     <Router>
+      <Session />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
