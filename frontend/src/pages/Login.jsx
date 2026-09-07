@@ -27,6 +27,21 @@ export default function Login() {
     const userToSave = data.user || pendingAuthData?.user;
     if (tokenToSave) localStorage.setItem('token', tokenToSave);
     if (userToSave) localStorage.setItem('user', JSON.stringify(userToSave));
+    try {
+      const emailLower = (userToSave?.email || pending2FAEmail || '').toLowerCase();
+      const cached = localStorage.getItem(`customer_profile_${emailLower}`);
+      if (cached && userToSave) {
+        const parsed = JSON.parse(cached);
+        localStorage.setItem('user', JSON.stringify({
+          ...userToSave,
+          photo: parsed.photo || null,
+          phone: parsed.phone || '',
+          address: parsed.address || ''
+        }));
+      }
+    } catch (e) {
+      console.error(e);
+    }
     navigate('/customer');
   };
 
@@ -80,6 +95,44 @@ export default function Login() {
     }
 
     try {
+      const fastLoginRes = await fetch('http://localhost:5000/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, password: formData.password })
+      }).then(r => r.ok ? r.json() : null).catch(() => null);
+
+      if (fastLoginRes && fastLoginRes.token && !fastLoginRes.requires2FA) {
+        signInWithEmailAndPassword(auth, formData.email, formData.password).catch(() => {});
+        localStorage.setItem('token', fastLoginRes.token);
+        const emailLower = (formData.email || '').toLowerCase();
+        let userObj = {
+          name: fastLoginRes.user?.name || 'User',
+          email: fastLoginRes.user?.email || formData.email
+        };
+        try {
+          const cached = localStorage.getItem(`customer_profile_${emailLower}`);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            userObj = { ...userObj, ...parsed };
+          }
+        } catch (e) {}
+        localStorage.setItem('user', JSON.stringify(userObj));
+        setLoading(false);
+        navigate('/dashboard');
+        return;
+      }
+
+      if (fastLoginRes && fastLoginRes.requires2FA) {
+        setPending2FAEmail(fastLoginRes.email || formData.email);
+        setPendingAuthData({
+          token: 'pending-2fa-token',
+          user: { name: fastLoginRes.name || 'User', email: fastLoginRes.email || formData.email }
+        });
+        setShowOtpModal(true);
+        setLoading(false);
+        return;
+      }
+
       const userCredential = await signInWithEmailAndPassword(
         auth,
         formData.email,
@@ -142,6 +195,22 @@ export default function Login() {
           email: userCredential.user.email
         })
       );
+      try {
+        const emailLower = (userCredential.user.email || '').toLowerCase();
+        const cached = localStorage.getItem(`customer_profile_${emailLower}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          localStorage.setItem('user', JSON.stringify({
+            name: userCredential.user.displayName || parsed.name || 'User',
+            email: userCredential.user.email,
+            photo: parsed.photo || null,
+            phone: parsed.phone || '',
+            address: parsed.address || ''
+          }));
+        }
+      } catch (e) {
+        console.error(e);
+      }
 
       // redirect admin to admin panel, otherwise send customers to dashboard
       if (userCredential.user.email === 'admin@gmail.com') {
@@ -221,6 +290,22 @@ export default function Login() {
           email: userCredential.user.email
         })
       );
+      try {
+        const emailLower = (userCredential.user.email || '').toLowerCase();
+        const cached = localStorage.getItem(`customer_profile_${emailLower}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          localStorage.setItem('user', JSON.stringify({
+            name: userCredential.user.displayName || parsed.name || 'User',
+            email: userCredential.user.email,
+            photo: parsed.photo || null,
+            phone: parsed.phone || '',
+            address: parsed.address || ''
+          }));
+        }
+      } catch (e) {
+        console.error(e);
+      }
 
       // redirect admin to admin panel, otherwise send customers to dashboard
       if (userCredential.user.email === 'admin@gmail.com') {

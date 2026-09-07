@@ -8,6 +8,7 @@ import Reviews from '../components/Reviews';
 import Faq from '../components/Faq';
 import Contact from '../components/Contact';
 import Footer from '../components/Footer';
+import Chat from '../components/chat';
 import { Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -42,6 +43,9 @@ export default function Home() {
           </Link>
         </motion.div>
       </section>
+
+      {/* ai chatbot widget */}
+      <Chat />
 
       <Footer />
     </div>

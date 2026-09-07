@@ -1,19 +1,21 @@
 import React from 'react';
-import { Home, Calendar, Clock, CircleCheck, AlertCircle, MapPin, ChevronRight, ArrowRight } from 'lucide-react';
+import { Home, Calendar, Clock, CircleCheck, AlertCircle, MapPin, ChevronRight, ArrowRight, Bell } from 'lucide-react';
 // import staff user icon
 import { User as StaffIcon } from 'lucide-react';
 import './Overview.css';
+import './Notifications.css';
 
-export default function CustomerOverview({ 
-  profile, 
-  totalBookings, 
-  upcomingCount, 
-  completedCount, 
-  pendingCount, 
-  nextBooking, 
-  formatDate, 
+export default function CustomerOverview({
+  profile,
+  totalBookings,
+  upcomingCount,
+  completedCount,
+  pendingCount,
+  nextBooking,
+  formatDate,
   setActiveTab,
-  getServiceInfo
+  getServiceInfo,
+  notifications = []
 }) {
   return (
     <div className="dashboard-panel">
@@ -60,9 +62,26 @@ export default function CustomerOverview({
           <span className="stat-value">{pendingCount}</span>
           <span className="stat-hint">awaiting confirmations</span>
         </div>
+        <div
+          className="stat-item-card stat-notifications"
+          style={{ cursor: 'pointer' }}
+          onClick={() => {
+            const el = document.getElementById('customer-overview-notifications');
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth' });
+            } else if (setActiveTab) {
+              setActiveTab('notifications');
+            }
+          }}
+        >
+          <span className="stat-icon"><Bell size={19} /></span>
+          <span className="stat-label">Notifications</span>
+          <span className="stat-value">{notifications.length}</span>
+          <span className="stat-hint">{notifications.filter(n => !n.read).length} unread alerts</span>
+        </div>
       </div>
 
-      {/* next booking and notification previews */}
+      {/* next booking */}
       <div className="recent-activity-section">
         <h3>Upcoming Visits</h3>
         {nextBooking ? (
@@ -76,7 +95,6 @@ export default function CustomerOverview({
                     <span className="meta-tag"><Calendar size={14} /> {formatDate(nextBooking.date)}</span>
                     <span className="meta-tag"><Clock size={14} /> {nextBooking.time}</span>
                     <span className="meta-tag"><MapPin size={14} /> {nextBooking.address}</span>
-                    {/* show assigned cleaner badge */}
                     {nextBooking.assignedStaff && (
                       <span className="meta-tag" style={{ color: '#0369a1', fontWeight: 600 }}>
                         <StaffIcon size={14} /> Staff: {nextBooking.assignedStaff}
@@ -88,13 +106,57 @@ export default function CustomerOverview({
                   <span>Appointment total</span>
                   <strong>₹{nextBooking.price}</strong>
                 </div>
-                <button className="next-booking-link" onClick={() => setActiveTab('upcoming')} aria-label="View appointment"><ChevronRight size={20} /></button>
+                <button className="next-booking-link" onClick={() => setActiveTab('upcoming')} aria-label="View appointment">
+                  <ChevronRight size={20} />
+                </button>
               </div>
             );
           })()
         ) : (
           <div className="empty-state-banner">
             <p>No upcoming cleanings are found.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Notifications Card Preview in Customer Overview */}
+      <div id="customer-overview-notifications" className="recent-activity-section" style={{ marginTop: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+          <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Bell size={20} color="#0284c7" />
+            Recent Notifications
+          </h3>
+          {setActiveTab && (
+            <button
+              onClick={() => setActiveTab('notifications')}
+              className="btn-mark-all-read"
+              style={{ padding: '6px 14px', fontSize: '0.82rem' }}
+            >
+              <span>View All Notifications ({notifications.length})</span>
+            </button>
+          )}
+        </div>
+
+        {notifications.length > 0 ? (
+          <div className="notifications-list-wrapper">
+            {notifications.slice(0, 3).map((notif) => (
+              <div key={notif.id || notif._id} className={`notification-card ${notif.read ? 'read' : 'unread'}`}>
+                <div className="notif-content">
+                  <div className="notif-header">
+                    <h4 className="notif-title">{notif.title}</h4>
+                    <span className="notif-date">{notif.date}</span>
+                  </div>
+                  <p className="notif-message">{notif.message}</p>
+                </div>
+                <span className={`staff-status-tag ${notif.read ? 'completed' : 'pending'}`}>
+                  {notif.read ? 'Read' : 'New'}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state-banner">
+            <p>No notifications found.</p>
           </div>
         )}
       </div>

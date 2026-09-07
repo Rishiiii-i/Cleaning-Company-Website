@@ -12,6 +12,8 @@ import CustomerReviews from './Reviews';
 import CustomerProfile from './Profile';
 import CustomerNotifications from './Notifications';
 import ServicesList from './ServicesList';
+import { subscribeNotifications, sendNotification, toggleNotificationRead, markAllRead } from '../../utils/notify';
+import Popup from '../../components/popup';
 
 export default function CustomerDashboard() {
   // safely retrieve user from localStorage
@@ -85,6 +87,53 @@ export default function CustomerDashboard() {
     photo: userLS.photo || null
   });
 
+  useEffect(() => {
+    const userEmail = (profile.email || userLS.email || '').toLowerCase();
+    if (!userEmail) return;
+
+    try {
+      const cached = localStorage.getItem(`customer_profile_${userEmail}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.photo || parsed.phone || parsed.address) {
+          setProfile(prev => ({ ...prev, ...parsed }));
+          setProfileForm(prev => ({ ...prev, ...parsed }));
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    const fetchRemoteProfile = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/user/profile?email=${encodeURIComponent(userEmail)}`);
+        if (res.ok) {
+          const remote = await res.json();
+          if (remote && (remote.photo || remote.phone || remote.address)) {
+            setProfile(prev => ({
+              ...prev,
+              name: remote.name || prev.name,
+              phone: remote.phone || prev.phone,
+              address: remote.address || prev.address,
+              photo: remote.photo || prev.photo
+            }));
+            setProfileForm(prev => ({
+              ...prev,
+              name: remote.name || prev.name,
+              phone: remote.phone || prev.phone,
+              address: remote.address || prev.address,
+              photo: remote.photo || prev.photo
+            }));
+            localStorage.setItem(`customer_profile_${userEmail}`, JSON.stringify(remote));
+          }
+        }
+      } catch (err) {
+        console.warn('could not sync profile from database:', err);
+      }
+    };
+    fetchRemoteProfile();
+  }, [profile.email, userLS.email]);
+
   // Initial bookings state
   const [bookings, setBookings] = useState([]);
 
@@ -110,6 +159,56 @@ export default function CustomerDashboard() {
 
   // Notifications list state
   const [notifications, setNotifications] = useState([]);
+  const [popupNotification, setPopupNotification] = useState(null);
+
+  useEffect(() => {
+    const customerEmail = profile?.email || userLS?.email;
+    if (!customerEmail) {
+      return;
+    }
+    let initialSync = true;
+    const unsubscribe = subscribeNotifications(customerEmail, (items) => {
+      if (!initialSync && items.length > 0 && !items[0].read) {
+        setPopupNotification(items[0]);
+      }
+      initialSync = false;
+      setNotifications(items);
+    });
+    return () => unsubscribe();
+  }, [profile?.email, userLS?.email]);
+
+  useEffect(() => {
+    const handleGlobalPopup = (e) => {
+      if (e?.detail) {
+        setPopupNotification(e.detail);
+      }
+    };
+    const handleCardClick = (e) => {
+      const card = e.target.closest('.notification-card');
+      if (card && !e.target.closest('button')) {
+        const title = card.querySelector('.notif-title')?.textContent || 'Notification';
+        const message = card.querySelector('.notif-message')?.textContent || '';
+        if (title && message) {
+          setPopupNotification({ title, message, date: new Date().toLocaleDateString() });
+        }
+      }
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('app:new-notification', handleGlobalPopup);
+      document.addEventListener('click', handleCardClick);
+      return () => {
+        window.removeEventListener('app:new-notification', handleGlobalPopup);
+        document.removeEventListener('click', handleCardClick);
+      };
+    }
+  }, []);
+
+  useEffect(() => {
+    const unread = notifications.find(n => !n.read);
+    if (unread && !popupNotification) {
+      setPopupNotification(unread);
+    }
+  }, [notifications]);
 
   // Booking form details input state
   const [formData, setFormData] = useState({
@@ -174,7 +273,117 @@ export default function CustomerDashboard() {
     setProfileSaveSuccess(true);
     const updatedUser = { ...userLS, name: profileForm.name, email: profileForm.email, photo: profileForm.photo };
     localStorage.setItem('user', JSON.stringify(updatedUser));
+
+    const userEmail = (profileForm.email || userLS.email || '').toLowerCase();
+    if (userEmail) {
+      localStorage.setItem(`customer_profile_${userEmail}`, JSON.stringify(updatedUser));
+      fetch('http://localhost:5000/api/user/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userEmail,
+          name: profileForm.name,
+          phone: profileForm.phone,
+          address: profileForm.address,
+          photo: profileForm.photo || ''
+        })
+      }).catch(err => console.error(err));
+    }
   };
+
+  const handleRemovePhoto = () => {
+    const userEmail = (profileForm.email || userLS.email || '').toLowerCase();
+    setProfileForm(prev => ({ ...prev, photo: null }));
+    setProfile(prev => ({ ...prev, photo: null }));
+    setProfileSaveSuccess(false);
+
+    try {
+      const existing = JSON.parse(localStorage.getItem(`customer_profile_${userEmail}`) || '{}');
+      const updated = { ...existing, photo: null };
+      if (userEmail) {
+        localStorage.setItem(`customer_profile_${userEmail}`, JSON.stringify(updated));
+      }
+      const currentLS = JSON.parse(localStorage.getItem('user') || '{}');
+      localStorage.setItem('user', JSON.stringify({ ...currentLS, photo: null }));
+    } catch (e) {
+      console.error(e);
+    }
+
+    if (userEmail) {
+      fetch('http://localhost:5000/api/user/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userEmail,
+          photo: '',
+          name: profileForm.name,
+          phone: profileForm.phone,
+          address: profileForm.address
+        })
+      }).catch(err => console.error(err));
+    }
+  };
+
+  useEffect(() => {
+    if (!profileForm.photo) return;
+    const userEmail = (profileForm.email || userLS.email || '').toLowerCase();
+    if (!userEmail) return;
+
+    const compressPhoto = (dataUrl, onDone) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 240;
+        let w = img.width;
+        let h = img.height;
+        if (w > h && w > maxDim) {
+          h = Math.round((h * maxDim) / w);
+          w = maxDim;
+        } else if (h > maxDim) {
+          w = Math.round((w * maxDim) / h);
+          h = maxDim;
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        onDone(canvas.toDataURL('image/jpeg', 0.82));
+      };
+      img.onerror = () => onDone(dataUrl);
+      img.src = dataUrl;
+    };
+
+    compressPhoto(profileForm.photo, (optimized) => {
+      if (optimized !== profileForm.photo) {
+        setProfileForm(prev => ({ ...prev, photo: optimized }));
+        setProfile(prev => ({ ...prev, photo: optimized }));
+      } else {
+        setProfile(prev => ({ ...prev, photo: optimized }));
+      }
+
+      try {
+        const existing = JSON.parse(localStorage.getItem(`customer_profile_${userEmail}`) || '{}');
+        const updated = { ...existing, photo: optimized, name: profileForm.name, email: userEmail };
+        localStorage.setItem(`customer_profile_${userEmail}`, JSON.stringify(updated));
+        const currentLS = JSON.parse(localStorage.getItem('user') || '{}');
+        localStorage.setItem('user', JSON.stringify({ ...currentLS, photo: optimized }));
+      } catch (e) {
+        console.error(e);
+      }
+
+      fetch('http://localhost:5000/api/user/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userEmail,
+          photo: optimized,
+          name: profileForm.name,
+          phone: profileForm.phone,
+          address: profileForm.address
+        })
+      }).catch(err => console.error(err));
+    });
+  }, [profileForm.photo]);
 
   // get pricing details by service type
   const getServiceInfo = (type) => {
@@ -273,6 +482,18 @@ export default function CustomerDashboard() {
                 read: false
               };
               setNotifications(prev => [newNotif, ...prev]);
+              sendNotification({
+                title: 'Payment Received',
+                message: `${profile.name || userLS.name || 'Customer'} paid ₹${booking.price} for booking #${String(booking.id).slice(-6)}.`,
+                recipient: 'admin',
+                type: 'payment'
+              });
+              sendNotification({
+                title: 'Payment Successful',
+                message: `your payment of ₹${booking.price} has been received.`,
+                recipient: profile.email || userLS.email,
+                type: 'payment'
+              });
               alert('payment successful and booking updated!');
             } else {
               alert('payment verification failed.');
@@ -331,6 +552,18 @@ export default function CustomerDashboard() {
           read: false
         };
         setNotifications([newNotif, ...notifications]);
+        sendNotification({
+          title: 'New Booking Created',
+          message: `${profile.name || userLS.name || 'Customer'} created a new cleaning booking (${formData.serviceType || 'Standard'}).`,
+          recipient: 'admin',
+          type: 'booking'
+        });
+        sendNotification({
+          title: 'Booking Created',
+          message: 'your cleaning booking has been created successfully.',
+          recipient: profile.email || userLS.email,
+          type: 'booking'
+        });
 
         setFormData({
           serviceType: 'standard',
@@ -378,6 +611,18 @@ export default function CustomerDashboard() {
           read: false
         };
         setNotifications([newNotif, ...notifications]);
+        sendNotification({
+          title: 'Booking Cancelled',
+          message: `${profile.name || userLS.name || 'Customer'} cancelled booking #${String(id).slice(-6)}.`,
+          recipient: 'admin',
+          type: 'booking'
+        });
+        sendNotification({
+          title: 'Booking Cancelled',
+          message: `your cleaning booking #${String(id).slice(-6)} was cancelled.`,
+          recipient: profile.email || userLS.email,
+          type: 'booking'
+        });
       }
     } catch (err) {
       console.error('Error cancelling booking:', err);
@@ -410,6 +655,18 @@ export default function CustomerDashboard() {
           read: false
         };
         setNotifications([newNotif, ...notifications]);
+        sendNotification({
+          title: 'Booking Rescheduled',
+          message: `${profile.name || userLS.name || 'Customer'} rescheduled booking #${String(activeRescheduleId).slice(-6)} to ${rescheduleDate} at ${rescheduleTime}.`,
+          recipient: 'admin',
+          type: 'booking'
+        });
+        sendNotification({
+          title: 'Booking Rescheduled',
+          message: `your cleaning booking #${String(activeRescheduleId).slice(-6)} was updated to ${rescheduleDate} at ${rescheduleTime}.`,
+          recipient: profile.email || userLS.email,
+          type: 'booking'
+        });
 
         setActiveRescheduleId(null);
         setRescheduleDate('');
@@ -472,12 +729,14 @@ export default function CustomerDashboard() {
       n.id === id ? { ...n, read: !n.read } : n
     );
     setNotifications(updated);
+    toggleNotificationRead(id, notifications.find(n => n.id === id)?.read);
   };
 
   // mark all system notifications as read
   const handleMarkAllRead = () => {
     const updated = notifications.map((n) => ({ ...n, read: true }));
     setNotifications(updated);
+    markAllRead(notifications);
   };
 
   // calculate summary statistics for dynamic cards
@@ -524,6 +783,7 @@ export default function CustomerDashboard() {
 
   return (
     <div className="customer-dashboard-page">
+      <Popup popup={popupNotification} onClose={() => setPopupNotification(null)} />
       <Navbar
         portalName="Customer portal"
         activeTab={activeTab}
@@ -642,6 +902,7 @@ export default function CustomerDashboard() {
               formatDate={formatDate}
               setActiveTab={setActiveTab}
               getServiceInfo={getServiceInfo}
+              notifications={notifications}
             />
           )}
 
@@ -717,6 +978,7 @@ export default function CustomerDashboard() {
               handleProfileSubmit={handleProfileSubmit}
               handleProfileChange={handleProfileChange}
               handlePhotoUpload={handlePhotoUpload}
+              handleRemovePhoto={handleRemovePhoto}
             />
           )}
 

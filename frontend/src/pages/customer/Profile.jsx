@@ -1,5 +1,6 @@
 import React from 'react';
 import { User, Camera, CheckCircle } from 'lucide-react';
+import { Upload, Trash2 } from 'lucide-react';
 import './Profile.css';
 
 export default function CustomerProfile({
@@ -9,6 +10,7 @@ export default function CustomerProfile({
   handleProfileChange,
   handlePhotoUpload
 }) {
+  const handleRemovePhoto = arguments[0]?.handleRemovePhoto;
   // two factor authentication state
   const [twoFactorActive, setTwoFactorActive] = React.useState(false);
   const [twoFactorLoading, setTwoFactorLoading] = React.useState(false);
@@ -104,6 +106,23 @@ export default function CustomerProfile({
           <div className="photo-upload-meta-text">
             <span className="photo-upload-title">Profile Picture</span>
             <span className="photo-upload-subtitle">JPG or PNG. Max size 2MB.</span>
+            <div className="photo-action-buttons">
+              <label htmlFor="profile-photo-input" className="btn-upload-photo" title="Upload Photo">
+                <Upload size={14} />
+                <span>Upload Photo</span>
+              </label>
+              {profileForm?.photo && (
+                <button
+                  type="button"
+                  onClick={handleRemovePhoto}
+                  className="btn-remove-photo"
+                  title="Remove Photo"
+                >
+                  <Trash2 size={14} />
+                  <span>Remove Photo</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
         <div className="two-factor-beside-box">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
 import { User, LogOut, ShieldCheck, Users, Briefcase, Calendar, FileText, Star, Mail, TrendingUp } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import './Dashboard.css';
 import '../customer/Dashboard.css'; // import customer CSS to share theme layout properties
 
@@ -13,6 +14,9 @@ import AdminPayments from './Payments';
 import AdminReviews from './Reviews';
 import AdminEnquiries from './Enquiries';
 import AdminReports from './Reports';
+import { subscribeNotifications, sendNotification, toggleNotificationRead, markAllRead, deleteNotification } from '../../utils/notify';
+import AdminNotifications from './Notifications';
+import Popup from '../../components/popup';
 
 export default function AdminDashboard() {
   // safely retrieve user from localStorage
@@ -86,6 +90,54 @@ export default function AdminDashboard() {
 
   // Initial contact enquiries state
   const [enquiries, setEnquiries] = useState([]);
+  const [adminNotifications, setAdminNotifications] = useState([]);
+  const [adminPopup, setAdminPopup] = useState(null);
+  const unreadAdminNotifs = adminNotifications.filter(n => !n.read).length;
+
+  useEffect(() => {
+    let initialLoad = true;
+    const unsubscribe = subscribeNotifications('admin', (items) => {
+      if (!initialLoad && items.length > 0 && !items[0].read) {
+        setAdminPopup(items[0]);
+      }
+      initialLoad = false;
+      setAdminNotifications(items);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const handleGlobalAdminPopup = (e) => {
+      if (e?.detail) {
+        setAdminPopup(e.detail);
+      }
+    };
+    const handleCardClick = (e) => {
+      const card = e.target.closest('.notification-card');
+      if (card && !e.target.closest('button')) {
+        const title = card.querySelector('.notif-title')?.textContent || 'Notification';
+        const message = card.querySelector('.notif-message')?.textContent || '';
+        if (title && message) {
+          setAdminPopup({ title, message, date: new Date().toLocaleDateString() });
+        }
+      }
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('app:new-notification', handleGlobalAdminPopup);
+      document.addEventListener('click', handleCardClick);
+      return () => {
+        window.removeEventListener('app:new-notification', handleGlobalAdminPopup);
+        document.removeEventListener('click', handleCardClick);
+      };
+    }
+  }, []);
+
+  useEffect(() => {
+    const unread = adminNotifications.find(n => !n.read);
+    if (unread && !adminPopup) {
+      setAdminPopup(unread);
+    }
+  }, [adminNotifications]);
 
   // fetch all bookings from database
   const loadBookings = async () => {
@@ -217,6 +269,20 @@ export default function AdminDashboard() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ assignedStaff: staffName })
     }).catch(err => console.error(err));
+    const assignedBooking = bookings.find(b => b.id === bookingId || b._id === bookingId);
+    if (assignedBooking?.email) {
+      sendNotification({
+        title: 'Staff Member Assigned',
+        message: `${staffName} has been assigned to your booking #${String(bookingId).slice(-6)}.`,
+        recipient: assignedBooking.email,
+        type: 'staff'
+      });
+      setAdminPopup({
+        title: 'Staff Member Assigned',
+        message: `${staffName} has been assigned to booking #${String(bookingId).slice(-6)}.`,
+        date: new Date().toLocaleDateString()
+      });
+    }
   };
 
   // change booking status updates in database and local state
@@ -232,6 +298,20 @@ export default function AdminDashboard() {
           item.id === bookingId ? { ...item, status: newStatus } : item
         );
         setBookings(updated);
+        const targetBooking = bookings.find(b => b.id === bookingId || b._id === bookingId);
+        if (targetBooking?.email) {
+          sendNotification({
+            title: `Booking ${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}`,
+            message: `your cleaning booking #${String(bookingId).slice(-6)} is now ${newStatus}.`,
+            recipient: targetBooking.email,
+            type: 'status'
+          });
+          setAdminPopup({
+            title: `Booking ${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}`,
+            message: `Booking #${String(bookingId).slice(-6)} status updated to ${newStatus}.`,
+            date: new Date().toLocaleDateString()
+          });
+        }
       }
     } catch (err) {
       console.error('Error updating booking status:', err);
@@ -425,6 +505,20 @@ export default function AdminDashboard() {
         });
       }
       setBookings(prev => prev.map(b => (b.id === bookingId || b._id === bookingId) ? { ...b, paymentStatus: newStatus } : b));
+      const targetB = bookings.find(b => b.id === bookingId || b._id === bookingId);
+      if (targetB?.email) {
+        sendNotification({
+          title: 'Payment Status Updated',
+          message: `your payment status for booking #${String(bookingId).slice(-6)} was marked as ${newStatus}.`,
+          recipient: targetB.email,
+          type: 'payment'
+        });
+        setAdminPopup({
+          title: 'Payment Status Updated',
+          message: `Payment status for booking #${String(bookingId).slice(-6)} was marked as ${newStatus}.`,
+          date: new Date().toLocaleDateString()
+        });
+      }
     } catch (err) {
       console.error(err);
     }
@@ -475,9 +569,20 @@ export default function AdminDashboard() {
 
   return (
     <div className="customer-dashboard-page">
+      <Popup popup={adminPopup} onClose={() => setAdminPopup(null)} />
       <Navbar
         portalName="Admin portal"
         activeTab={activeTab}
+        rightActions={
+          <button
+            className="topbar-bell"
+            onClick={() => setActiveTab('notifications')}
+            aria-label="View notifications"
+          >
+            <Bell size={20} />
+            {unreadAdminNotifs > 0 && <span className="bell-badge">{unreadAdminNotifs}</span>}
+          </button>
+        }
       />
       <div className="customer-dashboard-container">
 
@@ -550,6 +655,13 @@ export default function AdminDashboard() {
             >
               <TrendingUp size={18} />
               <span>Reports</span>
+            </button>
+            <button
+              className={`nav-item-btn ${activeTab === 'notifications' ? 'active' : ''}`}
+              onClick={() => setActiveTab('notifications')}
+            >
+              <Bell size={18} />
+              <span>Notifications {unreadAdminNotifs > 0 ? `(${unreadAdminNotifs})` : ''}</span>
             </button>
           </nav>
 
@@ -656,6 +768,24 @@ export default function AdminDashboard() {
               staff={staff}
               completedCount={completedCount}
               totalRevenue={totalRevenue}
+            />
+          )}
+          {activeTab === 'notifications' && (
+            <AdminNotifications
+              notifications={adminNotifications}
+              handleMarkAllRead={() => {
+                setAdminNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                markAllRead(adminNotifications);
+              }}
+              handleToggleRead={(id) => {
+                const current = adminNotifications.find(n => n.id === id)?.read;
+                setAdminNotifications(prev => prev.map(n => n.id === id ? { ...n, read: !n.read } : n));
+                toggleNotificationRead(id, current);
+              }}
+              handleDeleteNotification={(id) => {
+                setAdminNotifications(prev => prev.filter(n => n.id !== id));
+                deleteNotification(id);
+              }}
             />
           )}
         </main>
