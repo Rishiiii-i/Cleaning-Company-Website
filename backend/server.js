@@ -19,6 +19,7 @@ const customerRoutes = require('./routes/customer');
 const staffRoutes = require('./routes/staff');
 // import custom otp authentication routes
 const otpRoutes = require('./routes/otp');
+const chatRoutes = require('./routes/chat');
 
 // initialize database connection
 require('./db');
@@ -49,6 +50,7 @@ app.use('/api', customerRoutes);
 app.use('/api', staffRoutes);
 // mount otp routes middleware
 app.use('/api', otpRoutes);
+app.use('/api', chatRoutes);
 
 // basic status check route
 app.get('/api/status', (req, res) => {
@@ -174,6 +176,58 @@ app.post('/api/users/sync', async (req, res) => {
     res.json({ message: 'user synced successfully', user });
   } catch (err) {
     res.status(500).json({ error: 'Server error during user sync' });
+  }
+});
+
+app.get('/api/user/profile', async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) {
+      return res.status(400).json({ error: 'email is required' });
+    }
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ error: 'user not found' });
+    }
+    res.json({
+      name: user.name,
+      email: user.email,
+      phone: user.phone || '',
+      address: user.address || '',
+      photo: user.photo || ''
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'failed to fetch user profile' });
+  }
+});
+
+app.post('/api/user/profile', async (req, res) => {
+  try {
+    const { email, name, phone, address, photo } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'email is required' });
+    }
+    let user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      user = new User({ email: email.toLowerCase(), name: name || 'User' });
+    }
+    if (name) user.name = name;
+    if (phone !== undefined) user.phone = phone;
+    if (address !== undefined) user.address = address;
+    if (photo !== undefined) user.photo = photo;
+    await user.save();
+    res.json({
+      message: 'profile updated successfully',
+      user: {
+        name: user.name,
+        email: user.email,
+        phone: user.phone || '',
+        address: user.address || '',
+        photo: user.photo || ''
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'failed to update profile' });
   }
 });
 

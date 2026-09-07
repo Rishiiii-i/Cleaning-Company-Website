@@ -25,5 +25,10 @@ userSchema.add({
     default: false
   }
 });
+userSchema.add({
+  phone: { type: String, default: '' },
+  address: { type: String, default: '' },
+  photo: { type: String, default: '' }
+});
 
 module.exports = mongoose.model('User', userSchema);
