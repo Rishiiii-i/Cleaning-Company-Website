@@ -31,6 +31,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 // enable cross origin resource sharing
 app.use(cors());
 
+// set body limit
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ limit: '15mb', extended: true }));
 // parse json request body
 app.use(express.json());
 
@@ -51,6 +54,10 @@ app.use('/api', staffRoutes);
 // mount otp routes middleware
 app.use('/api', otpRoutes);
 app.use('/api', chatRoutes);
+// mail routes
+app.use('/api', require('./routes/mail'));
+// message routes
+app.use('/api', require('./routes/msg'));
 
 // basic status check route
 app.get('/api/status', (req, res) => {
