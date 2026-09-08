@@ -17,6 +17,8 @@ import AdminReports from './Reports';
 import { subscribeNotifications, sendNotification, toggleNotificationRead, markAllRead, deleteNotification } from '../../utils/notify';
 import AdminNotifications from './Notifications';
 import Popup from '../../components/popup';
+import AdminChat from './adminchat';
+import { MessageSquare } from 'lucide-react';
 
 export default function AdminDashboard() {
   // safely retrieve user from localStorage
@@ -93,6 +95,25 @@ export default function AdminDashboard() {
   const [adminNotifications, setAdminNotifications] = useState([]);
   const [adminPopup, setAdminPopup] = useState(null);
   const unreadAdminNotifs = adminNotifications.filter(n => !n.read).length;
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
+  const unreadChatCount = Math.max(chatUnreadCount, adminNotifications.filter(n => !n.read && n.type === 'chat').length);
+
+  // check unread
+  useEffect(() => {
+    const checkUnread = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/messages');
+        if (res.ok) {
+          const data = await res.json();
+          const count = (data || []).filter(m => !m.read && m.senderRole === 'candidate').length;
+          setChatUnreadCount(count);
+        }
+      } catch (e) {}
+    };
+    checkUnread();
+    const interval = setInterval(checkUnread, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     let initialLoad = true;
@@ -626,6 +647,19 @@ export default function AdminDashboard() {
               <User size={18} />
               <span>Staff</span>
             </button>
+            {/* chat button */}
+            <button
+              className={`nav-item-btn ${activeTab === 'chat' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab('chat');
+                setChatUnreadCount(0);
+                adminNotifications.filter(n => !n.read && n.type === 'chat').forEach(n => toggleNotificationRead(n.id, false));
+              }}
+            >
+              <MessageSquare size={18} />
+              <span>Chat</span>
+              {unreadChatCount > 0 && <span className="nav-chat-badge">{unreadChatCount}</span>}
+            </button>
 
             <p className="sidebar-nav-label sidebar-nav-label-secondary">Reports & logs</p>
             <button
@@ -787,6 +821,10 @@ export default function AdminDashboard() {
                 deleteNotification(id);
               }}
             />
+          )}
+          {/* chat content */}
+          {activeTab === 'chat' && (
+            <AdminChat />
           )}
         </main>
       </div>

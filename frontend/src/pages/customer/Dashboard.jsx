@@ -14,6 +14,8 @@ import CustomerNotifications from './Notifications';
 import ServicesList from './ServicesList';
 import { subscribeNotifications, sendNotification, toggleNotificationRead, markAllRead } from '../../utils/notify';
 import Popup from '../../components/popup';
+import UserChat from '../../components/userchat';
+import { MessageSquare } from 'lucide-react';
 
 export default function CustomerDashboard() {
   // safely retrieve user from localStorage
@@ -77,6 +79,30 @@ export default function CustomerDashboard() {
 
   // Active navigation tab state
   const [activeTab, setActiveTab] = useState('overview');
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
+
+  // check unread
+  useEffect(() => {
+    const userEmail = (userLS?.email || '').toLowerCase().trim();
+    if (!userEmail) return;
+    if (activeTab === 'chat') {
+      setChatUnreadCount(0);
+      return;
+    }
+    const checkUnread = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/messages?email=${encodeURIComponent(userEmail)}`);
+        if (res.ok) {
+          const data = await res.json();
+          const count = (data || []).filter(m => !m.read && m.senderRole === 'admin').length;
+          setChatUnreadCount(count);
+        }
+      } catch (e) {}
+    };
+    checkUnread();
+    const interval = setInterval(checkUnread, 3000);
+    return () => clearInterval(interval);
+  }, [userLS?.email, activeTab]);
 
   // Initial profile state records
   const [profile, setProfile] = useState({
@@ -745,6 +771,7 @@ export default function CustomerDashboard() {
   const completedCount = bookings.filter(b => b.status === 'completed').length;
   const pendingCount = bookings.filter(b => b.status === 'pending').length;
   const unreadNotifications = notifications.filter(n => !n.read).length;
+  const unreadChatCount = activeTab === 'chat' ? 0 : Math.max(chatUnreadCount, notifications.filter(n => !n.read && n.type === 'chat').length);
 
   // calculate the next scheduled or pending booking
   const sortedBookings = [...bookings].sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -840,6 +867,19 @@ export default function CustomerDashboard() {
             >
               <FileText size={18} />
               <span>Booking History</span>
+            </button>
+            {/* chat button */}
+            <button
+              className={`nav-item-btn ${activeTab === 'chat' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab('chat');
+                setChatUnreadCount(0);
+                notifications.filter(n => !n.read && n.type === 'chat').forEach(n => toggleNotificationRead(n.id, false));
+              }}
+            >
+              <MessageSquare size={18} />
+              <span>Chat</span>
+              {unreadChatCount > 0 && <span className="nav-chat-badge">{unreadChatCount}</span>}
             </button>
             <p className="sidebar-nav-label sidebar-nav-label-secondary">Account</p>
             <button
@@ -988,6 +1028,10 @@ export default function CustomerDashboard() {
               handleMarkAllRead={handleMarkAllRead}
               handleToggleRead={handleToggleRead}
             />
+          )}
+          {/* chat content */}
+          {activeTab === 'chat' && (
+            <UserChat user={profile || userLS} />
           )}
         </main>
 
