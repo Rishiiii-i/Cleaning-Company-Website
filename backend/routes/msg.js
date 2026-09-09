@@ -63,6 +63,20 @@ router.put('/messages/read', async (req, res) => {
   }
 });
 
+// update reactions
+router.put('/messages/:id/react', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reactions } = req.body;
+    if (id && !id.startsWith('local_')) {
+      await Chat.findByIdAndUpdate(id, { reactions: reactions || {} });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'failed to update reaction' });
+  }
+});
+
 // delete single message
 router.delete('/messages/:id', async (req, res) => {
   try {

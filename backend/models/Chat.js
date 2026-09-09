@@ -54,6 +54,10 @@ const chatSchema = new mongoose.Schema({
     name: { type: String, default: '' },
     type: { type: String, default: '' },
     size: { type: Number, default: 0 }
+  },
+  reactions: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
   }
 }, {
   timestamps: true
