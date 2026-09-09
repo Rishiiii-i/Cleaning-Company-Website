@@ -581,3 +581,20 @@
   display: inline-block;
 }
 
+.chat-message-row.me .chat-bubble:has(.chat-image-link),
+.chat-message-row.me .chat-bubble:has(.chat-message-image) {
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.chat-message-row.me .chat-bubble:has(.chat-image-link) .chat-bubble-text,
+.chat-message-row.me .chat-bubble:has(.chat-message-image) .chat-bubble-text {
+  color: #0f172a;
+}
+
+.chat-file-bubble:has(.chat-image-link):last-child {
+  margin-bottom: 0;
+}
+

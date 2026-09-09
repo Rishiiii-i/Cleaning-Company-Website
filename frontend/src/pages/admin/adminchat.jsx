@@ -3,6 +3,12 @@ import { Send, MessageSquare, User, Plus, X, Mail, Check, Smile, Trash2, Papercl
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { sendNotification } from '../../utils/notify';
+import { broadcastChatEvent } from '../../utils/chatnotif';
+import ChatFile from '../../components/chatfile';
+import { extractFilesFromMessages } from '../../utils/filestore';
+import ImgView from '../../components/imgview';
+import ChatReaction from '../../components/chatreaction';
+import { toggleReaction, saveReactionToFirestore, saveReactionToBackend } from '../../utils/chatreaction';
 import './adminchat.css';
 
 // chat
@@ -19,10 +25,30 @@ export default function AdminChat({ customers = [], bookings = [] }) {
   const [isSending, setIsSending] = useState(false);
   const [mailAlert, setMailAlert] = useState(null);
   const [showMailModal, setShowMailModal] = useState(false);
+  const [showFileStorage, setShowFileStorage] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
   const [customSubject, setCustomSubject] = useState('');
   const [customBody, setCustomBody] = useState('');
   const [isSendingCustomMail, setIsSendingCustomMail] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  useEffect(() => {
+    const handleDocClick = (e) => {
+      const target = e.target;
+      if (target && target.matches && target.matches('.chat-message-image, .chat-image-link, .chat-preview-thumb')) {
+        e.preventDefault();
+        e.stopPropagation();
+        const img = target.tagName === 'IMG' ? target : target.querySelector('img');
+        if (img && img.src) {
+          setPreviewImage({
+            url: img.src,
+            name: img.alt || 'image'
+          });
+        }
+      }
+    };
+    document.addEventListener('click', handleDocClick, true);
+    return () => document.removeEventListener('click', handleDocClick, true);
+  }, []);
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -394,6 +420,16 @@ export default function AdminChat({ customers = [], bookings = [] }) {
       recipient: selectedCandidate,
       type: 'chat'
     });
+    broadcastChatEvent({
+      title: 'New message from Admin',
+      message: text || (fileToSend ? `Sent file: ${fileToSend.name}` : 'New message'),
+      recipient: selectedCandidate,
+      senderRole: 'admin',
+      senderName: 'Admin',
+      type: 'chat',
+      date: dateStr,
+      time: timeStr
+    });
   };
 
   // delete message
@@ -414,6 +450,20 @@ export default function AdminChat({ customers = [], bookings = [] }) {
         console.warn('firestore delete error:', err);
       }
     }
+  };
+
+  // toggle message reaction
+  const handleToggleReaction = (msg, emoji) => {
+    if (!msg) return;
+    const newReactions = toggleReaction(msg.reactions, emoji, 'admin');
+    setAllMessages((prev) =>
+      prev.map((m) => {
+        const isMatch = m.id === msg.id || (m.createdAt === msg.createdAt && m.senderRole === msg.senderRole);
+        return isMatch ? { ...m, reactions: newReactions } : m;
+      })
+    );
+    saveReactionToFirestore(db, msg, newReactions);
+    saveReactionToBackend(msg, newReactions);
   };
 
   // delete chat
@@ -599,6 +649,15 @@ export default function AdminChat({ customers = [], bookings = [] }) {
                   <button
                     type="button"
                     className="admin-chat-direct-mail-btn"
+                    onClick={() => setShowFileStorage((prev) => !prev)}
+                    title="chat files"
+                  >
+                    <Paperclip size={14} />
+                    <span>files ({extractFilesFromMessages(currentMessages).length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-chat-direct-mail-btn"
                     onClick={() => setShowMailModal(true)}
                     title="compose email"
                   >
@@ -617,6 +676,25 @@ export default function AdminChat({ customers = [], bookings = [] }) {
                   <span className="admin-chat-role-pill">customer</span>
                 </div>
               </div>
+
+              <ChatFile
+                isOpen={showFileStorage}
+                onClose={() => setShowFileStorage(false)}
+                files={extractFilesFromMessages(currentMessages)}
+                role="admin"
+                chatId={selectedCandidate}
+                onFileUploaded={(stored) => {
+                  setSelectedFile(stored);
+                }}
+              />
+
+              <ImgView
+                isOpen={!!previewImage}
+                src={previewImage?.url}
+                name={previewImage?.name}
+                size={previewImage?.size}
+                onClose={() => setPreviewImage(null)}
+              />
 
               {mailAlert && (
                 <div className={`admin-chat-mail-alert ${mailAlert.type}`}>
@@ -681,6 +759,12 @@ export default function AdminChat({ customers = [], bookings = [] }) {
                             <Trash2 size={12} />
                           </button>
                         </div>
+
+                        <ChatReaction
+                          reactions={msg.reactions}
+                          currentUserId="admin"
+                          onReact={(emoji) => handleToggleReaction(msg, emoji)}
+                        />
                         <div className="chat-meta-row">
                           <span className="chat-time-label">
                             {msg.time || msg.date || ''}

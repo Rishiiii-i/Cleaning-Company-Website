@@ -19,6 +19,8 @@ import AdminNotifications from './Notifications';
 import Popup from '../../components/popup';
 import AdminChat from './adminchat';
 import { MessageSquare } from 'lucide-react';
+import { listenUnreadChat, markChatSeenInFirebase } from '../../utils/chatnotif';
+import ChatPop from '../../components/chatpop';
 
 export default function AdminDashboard() {
   // safely retrieve user from localStorage
@@ -115,6 +117,27 @@ export default function AdminDashboard() {
     return () => clearInterval(interval);
   }, []);
 
+  const [chatPopup, setChatPopup] = useState(null);
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      setChatUnreadCount(0);
+      markChatSeenInFirebase('admin');
+      return;
+    }
+    const unsubscribe = listenUnreadChat('admin', 'admin', (count) => {
+      setChatUnreadCount(count);
+    }, (msg) => {
+      if (activeTab !== 'chat') {
+        setChatPopup(msg);
+      }
+    });
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, [activeTab]);
+
   useEffect(() => {
     let initialLoad = true;
     const unsubscribe = subscribeNotifications('admin', (items) => {
@@ -131,6 +154,11 @@ export default function AdminDashboard() {
     const handleGlobalAdminPopup = (e) => {
       if (e?.detail) {
         setAdminPopup(e.detail);
+        if (e.detail.senderRole === 'admin' || (e.detail.title && e.detail.title.toLowerCase().includes('from admin')) || (e.detail.recipient && e.detail.recipient !== 'admin')) {
+          setAdminPopup(null);
+        } else {
+          setAdminNotifications((prev) => [{ ...e.detail, id: e.detail.id || `notif_${Date.now()}` }, ...prev]);
+        }
       }
     };
     const handleCardClick = (e) => {
@@ -591,6 +619,15 @@ export default function AdminDashboard() {
   return (
     <div className="customer-dashboard-page">
       <Popup popup={adminPopup} onClose={() => setAdminPopup(null)} />
+      <ChatPop
+        popup={chatPopup}
+        onClose={() => setChatPopup(null)}
+        onOpen={() => {
+          setActiveTab('chat');
+          setChatPopup(null);
+          markChatSeenInFirebase('admin');
+        }}
+      />
       <Navbar
         portalName="Admin portal"
         activeTab={activeTab}
@@ -654,6 +691,7 @@ export default function AdminDashboard() {
                 setActiveTab('chat');
                 setChatUnreadCount(0);
                 adminNotifications.filter(n => !n.read && n.type === 'chat').forEach(n => toggleNotificationRead(n.id, false));
+                markChatSeenInFirebase('admin');
               }}
             >
               <MessageSquare size={18} />

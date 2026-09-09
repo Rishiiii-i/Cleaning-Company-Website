@@ -3,6 +3,12 @@ import { Send, MessageSquare, ShieldCheck, Smile, Trash2, Paperclip, FileText, D
 import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { sendNotification } from '../utils/notify';
+import { broadcastChatEvent } from '../utils/chatnotif';
+import ChatFile from './chatfile';
+import { extractFilesFromMessages } from '../utils/filestore';
+import ImgView from './imgview';
+import ChatReaction from './chatreaction';
+import { toggleReaction, saveReactionToFirestore, saveReactionToBackend } from '../utils/chatreaction';
 import './userchat.css';
 
 // chat
@@ -12,8 +18,28 @@ export default function UserChat({ user }) {
   const [showEmojis, setShowEmojis] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isSending, setIsSending] = useState(false);
+  const [showFileStorage, setShowFileStorage] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
+  useEffect(() => {
+    const handleDocClick = (e) => {
+      const target = e.target;
+      if (target && target.matches && target.matches('.chat-message-image, .chat-image-link, .chat-preview-thumb')) {
+        e.preventDefault();
+        e.stopPropagation();
+        const img = target.tagName === 'IMG' ? target : target.querySelector('img');
+        if (img && img.src) {
+          setPreviewImage({
+            url: img.src,
+            name: img.alt || 'image'
+          });
+        }
+      }
+    };
+    document.addEventListener('click', handleDocClick, true);
+    return () => document.removeEventListener('click', handleDocClick, true);
+  }, []);
 
   const emojiList = ['😊', '😂', '👍', '❤️', '🎉', '🙏', '✨', '🧹', '🏠', '🧼', '👋', '🔥', '⭐', '💼', '✅', '🙌', '💯', '📞', '💡', '👌', '😍', '🥳', '👏', '💪'];
 
@@ -254,6 +280,16 @@ export default function UserChat({ user }) {
       recipient: 'admin',
       type: 'chat'
     });
+    broadcastChatEvent({
+      title: `New message from ${candidateName}`,
+      message: text || (fileToSend ? `Sent file: ${fileToSend.name}` : 'New message'),
+      recipient: 'admin',
+      senderRole: 'candidate',
+      senderName: candidateName,
+      type: 'chat',
+      date: dateStr,
+      time: timeStr
+    });
   };
 
   // delete message
@@ -274,6 +310,21 @@ export default function UserChat({ user }) {
         console.warn('firestore delete error:', err);
       }
     }
+  };
+
+  // toggle message reaction
+  const handleToggleReaction = (msg, emoji) => {
+    if (!msg) return;
+    const currentId = candidateEmail || 'customer';
+    const newReactions = toggleReaction(msg.reactions, emoji, currentId);
+    setMessages((prev) =>
+      prev.map((m) => {
+        const isMatch = m.id === msg.id || (m.createdAt === msg.createdAt && m.senderRole === msg.senderRole);
+        return isMatch ? { ...m, reactions: newReactions } : m;
+      })
+    );
+    saveReactionToFirestore(db, msg, newReactions);
+    saveReactionToBackend(msg, newReactions);
   };
 
   // delete chat
@@ -324,6 +375,16 @@ export default function UserChat({ user }) {
           </div>
         </div>
 
+        <button
+          type="button"
+          className="chat-header-files-btn"
+          onClick={() => setShowFileStorage((prev) => !prev)}
+          title="chat files"
+        >
+          <Paperclip size={14} />
+          <span>files ({extractFilesFromMessages(messages).length})</span>
+        </button>
+
         {messages.length > 0 && (
           <button
             type="button"
@@ -336,6 +397,25 @@ export default function UserChat({ user }) {
           </button>
         )}
       </div>
+
+      <ChatFile
+        isOpen={showFileStorage}
+        onClose={() => setShowFileStorage(false)}
+        files={extractFilesFromMessages(messages)}
+        role="customer"
+        chatId={candidateEmail}
+        onFileUploaded={(stored) => {
+          setSelectedFile(stored);
+        }}
+      />
+
+      <ImgView
+        isOpen={!!previewImage}
+        src={previewImage?.url}
+        name={previewImage?.name}
+        size={previewImage?.size}
+        onClose={() => setPreviewImage(null)}
+      />
 
       <div className="user-chat-messages">
         {messages.length === 0 ? (
@@ -393,6 +473,12 @@ export default function UserChat({ user }) {
                     <Trash2 size={12} />
                   </button>
                 </div>
+
+                <ChatReaction
+                  reactions={msg.reactions}
+                  currentUserId={candidateEmail || 'customer'}
+                  onReact={(emoji) => handleToggleReaction(msg, emoji)}
+                />
                 <span className="chat-time-label">
                   {msg.time || msg.date || ''}
                 </span>

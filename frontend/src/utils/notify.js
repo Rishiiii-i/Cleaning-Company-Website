@@ -60,6 +60,19 @@ export async function sendNotification({ title, message, recipient, type = 'gene
   try {
     // create notification collection
     const notifsRef = collection(db, 'notifications');
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('app:new-notification', {
+        detail: { title, message, recipient, type, date: getFormattedDate(), read: false }
+      }));
+      try {
+        if (typeof BroadcastChannel !== 'undefined') {
+          const bc = new BroadcastChannel('cleaning_chat_notif');
+          bc.postMessage({ title, message, recipient, type, date: getFormattedDate(), read: false, createdAt: Date.now() });
+          setTimeout(() => { try { bc.close(); } catch (e) { } }, 3000);
+        }
+        localStorage.setItem('chat_sync_signal', JSON.stringify({ title, message, recipient, type, date: getFormattedDate(), time: Date.now() }));
+      } catch (e) { }
+    }
 
     // add notification to firestore
     const docRef = await addDoc(notifsRef, {
@@ -77,6 +90,15 @@ export async function sendNotification({ title, message, recipient, type = 'gene
       window.dispatchEvent(new CustomEvent('app:new-notification', {
         detail: { title, message, recipient, type, date: getFormattedDate(), read: false }
       }));
+      // sync tabs
+      try {
+        if (typeof BroadcastChannel !== 'undefined') {
+          const bc = new BroadcastChannel('cleaning_chat_notif');
+          bc.postMessage({ title, message, recipient, type, date: getFormattedDate(), read: false, createdAt: Date.now() });
+          setTimeout(() => { try { bc.close(); } catch (e) { } }, 3000);
+        }
+        localStorage.setItem('chat_sync_signal', JSON.stringify({ title, message, recipient, type, date: getFormattedDate(), time: Date.now() }));
+      } catch (e) { }
     }
     return docRef.id;
   } catch (err) {
@@ -86,6 +108,15 @@ export async function sendNotification({ title, message, recipient, type = 'gene
       window.dispatchEvent(new CustomEvent('app:new-notification', {
         detail: { title, message, recipient, type, date: getFormattedDate(), read: false }
       }));
+      // sync tabs
+      try {
+        if (typeof BroadcastChannel !== 'undefined') {
+          const bc = new BroadcastChannel('cleaning_chat_notif');
+          bc.postMessage({ title, message, recipient, type, date: getFormattedDate(), read: false, createdAt: Date.now() });
+          setTimeout(() => { try { bc.close(); } catch (e) { } }, 3000);
+        }
+        localStorage.setItem('chat_sync_signal', JSON.stringify({ title, message, recipient, type, date: getFormattedDate(), time: Date.now() }));
+      } catch (e) { }
     }
     return null;
   }

@@ -269,6 +269,17 @@
   }
 }
 
+@media (max-width: 768px) {
+  .hero-visual { order: 1; }
+  .hero-section { padding: 24px 14px 36px; }
+  .hero-container { gap: 20px; }
+  .hero-content h1 { font-size: clamp(1.85rem, 7vw, 2.25rem); line-height: 1.15; }
+  .hero-badge { padding: 4px 10px; max-width: 100%; }
+  .hero-content p { font-size: 0.92rem; line-height: 1.5; }
+  .image-wrapper { height: 210px; border-width: 4px; }
+  .floating-badge { padding: 8px 12px; right: 12px; bottom: 12px; }
+}
+
 .hero-bg-blobs {
   position: absolute;
   top: 0;

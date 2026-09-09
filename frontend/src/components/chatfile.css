@@ -1,0 +1,260 @@
+.chatfile-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 320px;
+  max-width: 100%;
+  height: 100%;
+  background: #0f172a;
+  border-left: 1px solid #1e293b;
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.4);
+  animation: chatfile-slide-in 0.22s ease-out;
+}
+
+@keyframes chatfile-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.chatfile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #1e293b;
+}
+
+.chatfile-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chatfile-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.chatfile-count-badge {
+  background: #38bdf8;
+  color: #0f172a;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 9999px;
+}
+
+.chatfile-close-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.chatfile-close-btn:hover {
+  background: #1e293b;
+  color: #f8fafc;
+}
+
+.chatfile-tabs {
+  display: flex;
+  padding: 8px 12px;
+  gap: 6px;
+  border-bottom: 1px solid #1e293b;
+  background: #090d16;
+}
+
+.chatfile-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chatfile-tab-btn.active {
+  background: #1e293b;
+  color: #38bdf8;
+  border-color: #334155;
+}
+
+.chatfile-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chatfile-empty {
+  text-align: center;
+  padding: 40px 16px;
+  color: #64748b;
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.chatfile-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 8px 10px;
+  transition: all 0.15s ease;
+}
+
+.chatfile-card:hover {
+  border-color: #38bdf8;
+  background: #243248;
+}
+
+.chatfile-thumb-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.chatfile-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chatfile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.chatfile-name {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chatfile-sub {
+  margin: 2px 0 0 0;
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.chatfile-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chatfile-act-btn {
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #cbd5e1;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chatfile-act-btn:hover {
+  color: #38bdf8;
+  border-color: #38bdf8;
+  background: #1e293b;
+}
+
+.chatfile-footer {
+  padding: 10px 14px;
+  border-top: 1px solid #1e293b;
+  background: #090d16;
+}
+
+.chatfile-upload-btn {
+  width: 100%;
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.15s ease;
+}
+
+.chatfile-upload-btn:hover {
+  background: #0369a1;
+}
+
+.chat-header-files-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(254, 202, 202, 0.35);
+  border-radius: 99px;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: auto;
+  margin-right: 8px;
+}
+
+.chat-header-files-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.chatfile-thumb-box.clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.chatfile-thumb-box.clickable:hover {
+  opacity: 0.85;
+  transform: scale(1.05);
+}
+
+

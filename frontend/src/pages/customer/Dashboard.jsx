@@ -16,6 +16,8 @@ import { subscribeNotifications, sendNotification, toggleNotificationRead, markA
 import Popup from '../../components/popup';
 import UserChat from '../../components/userchat';
 import { MessageSquare } from 'lucide-react';
+import { listenUnreadChat, markChatSeenInFirebase } from '../../utils/chatnotif';
+import ChatPop from '../../components/chatpop';
 
 export default function CustomerDashboard() {
   // safely retrieve user from localStorage
@@ -102,6 +104,28 @@ export default function CustomerDashboard() {
     checkUnread();
     const interval = setInterval(checkUnread, 3000);
     return () => clearInterval(interval);
+  }, [userLS?.email, activeTab]);
+
+  const [chatPopup, setChatPopup] = useState(null);
+  useEffect(() => {
+    const userEmail = (userLS?.email || '').toLowerCase().trim();
+    if (activeTab === 'chat') {
+      setChatUnreadCount(0);
+      markChatSeenInFirebase('customer', userEmail);
+      return;
+    }
+    const unsubscribe = listenUnreadChat('customer', userEmail, (count) => {
+      setChatUnreadCount(count);
+    }, (msg) => {
+      if (activeTab !== 'chat') {
+        setChatPopup(msg);
+      }
+    });
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, [userLS?.email, activeTab]);
 
   // Initial profile state records
@@ -207,6 +231,11 @@ export default function CustomerDashboard() {
     const handleGlobalPopup = (e) => {
       if (e?.detail) {
         setPopupNotification(e.detail);
+        if (e.detail.senderRole === 'candidate' || e.detail.recipient === 'admin' || (e.detail.title && e.detail.title.toLowerCase().includes('from ') && !e.detail.title.toLowerCase().includes('from admin'))) {
+          setPopupNotification(null);
+        } else {
+          setNotifications((prev) => [{ ...e.detail, id: e.detail.id || `notif_${Date.now()}` }, ...prev]);
+        }
       }
     };
     const handleCardClick = (e) => {
@@ -811,6 +840,15 @@ export default function CustomerDashboard() {
   return (
     <div className="customer-dashboard-page">
       <Popup popup={popupNotification} onClose={() => setPopupNotification(null)} />
+      <ChatPop
+        popup={chatPopup}
+        onClose={() => setChatPopup(null)}
+        onOpen={() => {
+          setActiveTab('chat');
+          setChatPopup(null);
+          markChatSeenInFirebase('customer', (profile?.email || userLS?.email || '').toLowerCase().trim());
+        }}
+      />
       <Navbar
         portalName="Customer portal"
         activeTab={activeTab}
@@ -875,6 +913,7 @@ export default function CustomerDashboard() {
                 setActiveTab('chat');
                 setChatUnreadCount(0);
                 notifications.filter(n => !n.read && n.type === 'chat').forEach(n => toggleNotificationRead(n.id, false));
+                markChatSeenInFirebase('customer', (profile?.email || userLS?.email || '').toLowerCase().trim());
               }}
             >
               <MessageSquare size={18} />
