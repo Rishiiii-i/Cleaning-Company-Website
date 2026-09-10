@@ -21,6 +21,7 @@ import AdminChat from './adminchat';
 import { MessageSquare } from 'lucide-react';
 import { listenUnreadChat, markChatSeenInFirebase } from '../../utils/chatnotif';
 import ChatPop from '../../components/chatpop';
+import { subscribeChatWs } from '../../utils/socket';
 
 export default function AdminDashboard() {
   // safely retrieve user from localStorage
@@ -135,6 +136,68 @@ export default function AdminDashboard() {
       if (typeof unsubscribe === 'function') {
         unsubscribe();
       }
+    };
+  }, [activeTab]);
+
+  // title
+  const formatTitle = (t) => {
+    if (!t) return t;
+    if (typeof t === 'string' && t.includes('reacted')) {
+      const noEmoji = t.replace(/[👍❤️😂😮😢🔥]/gu, '').replace(/\s+/g, ' ').trim();
+      return noEmoji.toLowerCase().endsWith('reacted') ? (noEmoji + ' to your message') : noEmoji;
+    }
+    return t;
+  };
+
+  // check popup
+  useEffect(() => {
+    if (adminPopup?.title && typeof adminPopup.title === 'string' && adminPopup.title.includes('reacted')) {
+      const formatted = formatTitle(adminPopup.title);
+      if (formatted !== adminPopup.title) {
+        setAdminPopup((prev) => (prev ? { ...prev, title: formatted } : prev));
+      }
+    }
+  }, [adminPopup]);
+
+  // check chat popup
+  useEffect(() => {
+    if (chatPopup?.title && typeof chatPopup.title === 'string' && chatPopup.title.includes('reacted')) {
+      const formatted = formatTitle(chatPopup.title);
+      if (formatted !== chatPopup.title) {
+        setChatPopup((prev) => (prev ? { ...prev, title: formatted } : prev));
+      }
+    }
+  }, [chatPopup]);
+
+  // chat updates
+  useEffect(() => {
+    const unsubWs = subscribeChatWs('admin', 'admin@gmail.com', (data) => {
+      const isFromCust = (data?.isReaction && data?.reactorRole === 'candidate') || (!data?.isReaction && data?.senderRole === 'candidate');
+      if (data && isFromCust) {
+        if (activeTab !== 'chat') {
+          setChatUnreadCount((prev) => (typeof prev === 'number' ? prev + 1 : 1));
+          const custName = data.reactorName || data.candidateName || data.senderName || 'Customer';
+          if (data.isReaction) {
+            setChatPopup({
+              title: custName + ' reacted to your message',
+              message: data.text ? 'To: "' + data.text + '"' : 'New reaction',
+              time: data.time || 'Just now',
+              sender: custName
+            });
+          } else {
+            setChatPopup({
+              title: "New message from " + custName,
+              message: data.text || (data.file ? 'Sent an attachment' : 'New message'),
+              time: data.time || 'Just now',
+              sender: custName
+            });
+          }
+        }
+      }
+    });
+
+    return () => {
+      if (typeof unsubWs === 'function') unsubWs();
     };
   }, [activeTab]);
 

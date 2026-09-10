@@ -4,6 +4,7 @@ import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc
 import { db } from '../firebase';
 import { sendNotification } from '../utils/notify';
 import { broadcastChatEvent } from '../utils/chatnotif';
+import { subscribeChatWs } from '../utils/socket';
 import ChatFile from './chatfile';
 import { extractFilesFromMessages } from '../utils/filestore';
 import ImgView from './imgview';
@@ -114,6 +115,29 @@ export default function UserChat({ user }) {
     fetchDbMessages();
     const interval = setInterval(fetchDbMessages, 3000);
     return () => clearInterval(interval);
+  }, [candidateEmail]);
+
+  // live messages
+  useEffect(() => {
+    if (!candidateEmail) return;
+    const unsubWs = subscribeChatWs('customer', candidateEmail, (data) => {
+      if (data) {
+        if (data.isReaction) {
+          setMessages((prev) =>
+            prev.map((m) => {
+              const isMatch = (data.id && m.id === data.id) || (data._id && (m.id === data._id || m._id === data._id)) || (m.createdAt === data.createdAt && m.candidateEmail === data.candidateEmail);
+              return isMatch ? { ...m, reactions: data.reactions } : m;
+            })
+          );
+        } else if (data.senderRole === 'admin') {
+          setMessages((prev) => mergeMessages(prev, [{ ...data, read: true }]));
+          markMessagesAsRead();
+        }
+      }
+    });
+    return () => {
+      if (typeof unsubWs === 'function') unsubWs();
+    };
   }, [candidateEmail]);
 
   // get permission
@@ -325,6 +349,36 @@ export default function UserChat({ user }) {
     );
     saveReactionToFirestore(db, msg, newReactions);
     saveReactionToBackend(msg, newReactions);
+    // send reaction notification
+    if (newReactions[emoji]?.includes(currentId)) {
+      sendNotification({
+        title: `${candidateName} reacted to your message`,
+        message: msg.text ? `To: "${msg.text}"` : 'New reaction',
+        recipient: 'admin',
+        type: 'chat'
+      });
+      broadcastChatEvent({
+        title: `${candidateName} reacted to your message`,
+        message: msg.text ? `To: "${msg.text}"` : 'New reaction',
+        recipient: 'admin',
+        senderRole: 'candidate',
+        senderName: candidateName,
+        type: 'chat'
+      });
+      const mId = msg._id || msg.id;
+      if (mId && !String(mId).startsWith('local_')) {
+        fetch(`http://localhost:5000/api/messages/${mId}/react`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reactions: newReactions,
+            reactorRole: 'candidate',
+            reactorName: candidateName,
+            isReactionAdd: true
+          })
+        }).catch(() => {});
+      }
+    }
   };
 
   // delete chat

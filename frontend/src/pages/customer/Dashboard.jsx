@@ -18,6 +18,7 @@ import UserChat from '../../components/userchat';
 import { MessageSquare } from 'lucide-react';
 import { listenUnreadChat, markChatSeenInFirebase } from '../../utils/chatnotif';
 import ChatPop from '../../components/chatpop';
+import { subscribeChatWs } from '../../utils/socket';
 
 export default function CustomerDashboard() {
   // safely retrieve user from localStorage
@@ -125,6 +126,60 @@ export default function CustomerDashboard() {
       if (typeof unsubscribe === 'function') {
         unsubscribe();
       }
+    };
+  }, [userLS?.email, activeTab]);
+
+  // title
+  const formatTitle = (t) => {
+    if (!t) return t;
+    if (typeof t === 'string' && t.includes('reacted')) {
+      const noEmoji = t.replace(/[👍❤️😂😮😢🔥]/gu, '').replace(/\s+/g, ' ').trim();
+      return noEmoji.toLowerCase().endsWith('reacted') ? (noEmoji + ' to your message') : noEmoji;
+    }
+    return t;
+  };
+
+  // check popup
+  useEffect(() => {
+    if (chatPopup?.title && typeof chatPopup.title === 'string' && chatPopup.title.includes('reacted')) {
+      const formatted = formatTitle(chatPopup.title);
+      if (formatted !== chatPopup.title) {
+        setChatPopup((prev) => (prev ? { ...prev, title: formatted } : prev));
+      }
+    }
+  }, [chatPopup]);
+
+  // chat updates
+  useEffect(() => {
+    const userEmail = (userLS?.email || '').toLowerCase().trim();
+    if (!userEmail) return;
+
+    const unsubWs = subscribeChatWs('customer', userEmail, (data) => {
+      const isFromAdmin = (data?.isReaction && data?.reactorRole === 'admin') || (!data?.isReaction && data?.senderRole === 'admin');
+      if (data && isFromAdmin) {
+        if (activeTab !== 'chat') {
+          setChatUnreadCount((prev) => (typeof prev === 'number' ? prev + 1 : 1));
+          if (data.isReaction) {
+            setChatPopup({
+              title: 'Admin reacted to your message',
+              message: data.text ? 'To: "' + data.text + '"' : 'New reaction',
+              time: data.time || 'Just now',
+              sender: 'Admin'
+            });
+          } else {
+            setChatPopup({
+              title: 'New message from Admin',
+              message: data.text || (data.file ? 'Sent an attachment' : 'New message'),
+              time: data.time || 'Just now',
+              sender: 'Admin'
+            });
+          }
+        }
+      }
+    });
+
+    return () => {
+      if (typeof unsubWs === 'function') unsubWs();
     };
   }, [userLS?.email, activeTab]);
 
