@@ -41,6 +41,11 @@ router.post('/messages', async (req, res) => {
     });
 
     const saved = await newMsg.save();
+    // send message
+    try {
+      const { broadcastChat } = require('../socket');
+      broadcastChat({ id: saved._id.toString(), ...saved.toObject() });
+    } catch (e) {}
     res.status(201).json({ id: saved._id.toString(), ...saved.toObject() });
   } catch (err) {
     res.status(500).json({ error: 'failed to save message' });
@@ -70,6 +75,22 @@ router.put('/messages/:id/react', async (req, res) => {
     const { reactions } = req.body;
     if (id && !id.startsWith('local_')) {
       await Chat.findByIdAndUpdate(id, { reactions: reactions || {} });
+      // send reaction
+      try {
+        if (req.body?.isReactionAdd || req.body?.reactorRole) {
+          const docObj = await Chat.findById(id);
+          if (docObj) {
+            const { broadcastChat } = require('../socket');
+            broadcastChat({
+              id: docObj._id.toString(),
+              ...docObj.toObject(),
+              isReaction: true,
+              reactorRole: req.body?.reactorRole || (docObj.senderRole === 'candidate' ? 'admin' : 'candidate'),
+              reactorName: req.body?.reactorName || ''
+            });
+          }
+        }
+      } catch (e) {}
     }
     res.json({ success: true });
   } catch (err) {
