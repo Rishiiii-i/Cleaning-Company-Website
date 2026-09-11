@@ -58,6 +58,8 @@ app.use('/api', chatRoutes);
 app.use('/api', require('./routes/mail'));
 // message routes
 app.use('/api', require('./routes/msg'));
+// google ai routes
+app.use('/api', require('./routes/google'));
 
 // basic status check route
 app.get('/api/status', (req, res) => {

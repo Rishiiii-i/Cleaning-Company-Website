@@ -63,4 +63,15 @@ const chatSchema = new mongoose.Schema({
   timestamps: true
 });
 
+chatSchema.add({
+  deletedForCustomer: {
+    type: Boolean,
+    default: false
+  },
+  deletedForAdmin: {
+    type: Boolean,
+    default: false
+  }
+});
+
 module.exports = mongoose.model('Chat', chatSchema);
