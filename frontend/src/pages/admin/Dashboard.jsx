@@ -354,6 +354,12 @@ export default function AdminDashboard() {
     loadServices();
     loadCustomers();
     loadStaff();
+    // refresh data
+    const liveInterval = setInterval(() => {
+      loadCustomers();
+      loadBookings();
+    }, 4000);
+    return () => clearInterval(liveInterval);
   }, []);
 
   // Modal and input edit state variables
@@ -399,6 +405,7 @@ export default function AdminDashboard() {
 
   // change booking status updates in database and local state
   const handleStatusChange = async (bookingId, newStatus) => {
+    setBookings((prev) => prev.map((item) => (item.id === bookingId || item._id === bookingId) ? { ...item, status: newStatus } : item));
     try {
       const res = await fetch(`http://localhost:5000/api/bookings/${bookingId}`, {
         method: 'PUT',
@@ -434,6 +441,7 @@ export default function AdminDashboard() {
   const handleToggleEnquiryStatus = async (id) => {
     const item = enquiries.find(e => (e.id || e._id) === id);
     const nextStatus = item?.status === 'pending' ? 'resolved' : 'pending';
+    setEnquiries((prev) => prev.map((e) => (e.id || e._id) === id ? { ...e, status: nextStatus } : e));
     try {
       const res = await fetch(`http://localhost:5000/api/enquiries/${id}`, {
         method: 'PUT',

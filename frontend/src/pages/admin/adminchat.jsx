@@ -10,6 +10,7 @@ import { extractFilesFromMessages } from '../../utils/filestore';
 import ImgView from '../../components/imgview';
 import ChatReaction from '../../components/chatreaction';
 import { toggleReaction, saveReactionToFirestore, saveReactionToBackend } from '../../utils/chatreaction';
+import AiReply from '../../components/aireply';
 import './adminchat.css';
 
 // chat
@@ -52,6 +53,8 @@ export default function AdminChat({ customers = [], bookings = [] }) {
   }, []);
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
+  const prevCandRef = useRef('');
+  const prevCandMsgCountRef = useRef(0);
 
   const emojiList = ['😊', '😂', '👍', '❤️', '🎉', '🙏', '✨', '🧹', '🏠', '🧼', '👋', '🔥', '⭐', '💼', '✅', '🙌', '💯', '📞', '💡', '👌', '😍', '🥳', '👏', '💪'];
 
@@ -69,10 +72,31 @@ export default function AdminChat({ customers = [], bookings = [] }) {
       }
     };
     loadCandidates();
+    // refresh users
+    const candInterval = setInterval(loadCandidates, 4000);
+    return () => clearInterval(candInterval);
   }, []);
 
   // merge messages
   const mergeMessages = (prevList, incomingList) => {
+    let adminDelMsgs = [];
+    try {
+      adminDelMsgs = JSON.parse(localStorage.getItem('admin_del_msgs') || '[]');
+    } catch (e) {}
+    const isAdminDeleted = (m) => {
+      if (!m) return true;
+      if (m.deletedForAdmin) return true;
+      if (m.id && adminDelMsgs.includes(m.id)) return true;
+      if (m._id && adminDelMsgs.includes(m._id)) return true;
+      const candKey = (m.candidateEmail || '').toLowerCase().trim();
+      if (candKey) {
+        const clearedAt = Number(localStorage.getItem(`admin_chat_cleared_${candKey}`) || 0);
+        if (clearedAt && (m.createdAt || 0) <= clearedAt) return true;
+      }
+      return false;
+    };
+    prevList = prevList.filter((m) => !isAdminDeleted(m));
+    incomingList = incomingList.filter((m) => !isAdminDeleted(m));
     const map = new Map();
     // old messages
     prevList.forEach((m) => {
@@ -291,6 +315,20 @@ export default function AdminChat({ customers = [], bookings = [] }) {
   }, [selectedCandidate, allMessages]);
 
   useEffect(() => {
+    const container = scrollRef.current?.parentElement;
+    if (container) {
+      const isCandidateChanged = prevCandRef.current !== selectedCandidate;
+      prevCandRef.current = selectedCandidate;
+      const candMsgs = selectedCandidate && candidatesMap[selectedCandidate] ? candidatesMap[selectedCandidate].messages : [];
+      const isCountIncreased = candMsgs.length > (prevCandMsgCountRef.current || 0);
+      prevCandMsgCountRef.current = candMsgs.length;
+      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 120;
+
+      if (isCandidateChanged || (isCountIncreased && isNearBottom)) {
+        container.scrollTop = container.scrollHeight;
+      }
+      return;
+    }
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: 'smooth' });
     }
@@ -410,6 +448,11 @@ export default function AdminChat({ customers = [], bookings = [] }) {
     };
 
     setAllMessages((prev) => mergeMessages(prev, [{ ...newMsgData, id: `local_${createdAt}` }]));
+    setTimeout(() => {
+      if (scrollRef.current?.parentElement) {
+        scrollRef.current.parentElement.scrollTop = scrollRef.current.parentElement.scrollHeight;
+      }
+    }, 40);
 
     try {
       const res = await fetch('http://localhost:5000/api/messages', {
@@ -456,6 +499,29 @@ export default function AdminChat({ customers = [], bookings = [] }) {
 
   // delete message
   const handleDeleteMessage = async (msgId) => {
+    if (!msgId) return;
+    setAllMessages((prev) => prev.filter((m) => m.id !== msgId && m._id !== msgId));
+    try {
+      const key = 'admin_del_msgs';
+      const existing = JSON.parse(localStorage.getItem(key) || '[]');
+      if (!existing.includes(msgId)) {
+        existing.push(msgId);
+        localStorage.setItem(key, JSON.stringify(existing));
+      }
+    } catch (e) {}
+    try {
+      fetch(`http://localhost:5000/api/messages/${msgId}?role=admin`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: 'admin' })
+      }).catch(() => {});
+    } catch (e) {}
+    if (db && !msgId.startsWith('local_')) {
+      try {
+        updateDoc(doc(db, 'chats', msgId), { deletedForAdmin: true }).catch(() => {});
+      } catch (e) {}
+    }
+    return;
     if (!msgId) return;
     setAllMessages((prev) => prev.filter((m) => m.id !== msgId));
 
@@ -524,6 +590,30 @@ export default function AdminChat({ customers = [], bookings = [] }) {
     if (!selectedCandidate) return;
     const candName = currentCandidateData?.name || selectedCandidate;
     if (!window.confirm(`Are you sure you want to delete all chat history with ${candName}?`)) return;
+    const clearTime = Date.now();
+    try {
+      localStorage.setItem(`admin_chat_cleared_${selectedCandidate}`, String(clearTime));
+    } catch (e) {}
+    setAllMessages((prev) => prev.filter((m) => (m.candidateEmail || '').toLowerCase().trim() !== selectedCandidate));
+    try {
+      fetch(`http://localhost:5000/api/messages?email=${encodeURIComponent(selectedCandidate)}&role=admin`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: 'admin' })
+      }).catch(() => {});
+    } catch (e) {}
+    if (db) {
+      try {
+        getDocs(query(collection(db, 'chats'), where('candidateEmail', '==', selectedCandidate)))
+          .then((snap) => {
+            snap.docs.forEach((d) => {
+              updateDoc(doc(db, 'chats', d.id), { deletedForAdmin: true }).catch(() => {});
+            });
+          })
+          .catch(() => {});
+      } catch (e) {}
+    }
+    return;
 
     setAllMessages((prev) => prev.filter((m) => (m.candidateEmail || '').toLowerCase().trim() !== selectedCandidate));
 
@@ -879,6 +969,14 @@ export default function AdminChat({ customers = [], bookings = [] }) {
                     </button>
                   </div>
                 )}
+
+                <AiReply
+                  messages={currentMessages}
+                  lastCustomerMessage={[...currentMessages].reverse().find(m => m.senderRole === 'candidate' && m.text && m.text.trim())}
+                  onSelectReply={(text) => setReplyText(text)}
+                  candidateName={currentCandidateData?.name}
+                  conversationId={selectedCandidate}
+                />
 
                 <form onSubmit={handleSendReply} className="admin-chat-input-form">
                   <div className="chat-media-buttons">

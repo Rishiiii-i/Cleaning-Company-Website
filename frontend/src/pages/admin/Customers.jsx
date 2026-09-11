@@ -1,6 +1,8 @@
 import React from 'react';
 // import icons for add, delete, and close
 import { Plus, Trash2, X } from 'lucide-react';
+import { Download } from 'lucide-react';
+import { exportToCSV } from '../../utils/export';
 import './Customers.css';
 
 export default function AdminCustomers({ customers }) {
@@ -17,6 +19,13 @@ export default function AdminCustomers({ customers }) {
   const handleAddCustomer = arguments[0]?.handleAddCustomer || (typeof window !== 'undefined' && window.adminHandlers?.handleAddCustomer);
   const handleDeleteCustomer = arguments[0]?.handleDeleteCustomer || (typeof window !== 'undefined' && window.adminHandlers?.handleDeleteCustomer);
   customers = (customers || []).filter(c => !c ? false : (c.email !== 'admin@gmail.com' && c.role !== 'admin' && ((c.name || '').toLowerCase().includes(search.toLowerCase()) || (c.email || '').toLowerCase().includes(search.toLowerCase()))));
+  const [sortBy, setSortBy] = React.useState('name-asc');
+  customers = [...customers].sort((a, b) => {
+    if (sortBy === 'name-asc') return (a.name || '').localeCompare(b.name || '');
+    if (sortBy === 'name-desc') return (b.name || '').localeCompare(a.name || '');
+    if (sortBy === 'city') return (a.city || '').localeCompare(b.city || '');
+    return 0;
+  });
   // manage add customer modal visibility
   return (
     <div className="dashboard-panel">
@@ -34,6 +43,26 @@ export default function AdminCustomers({ customers }) {
             onChange={(e) => setSearch(e.target.value)}
             className="customer-search-input"
           />
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="customer-sort-select"
+            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'white', fontSize: '0.85rem', cursor: 'pointer' }}
+          >
+            <option value="name-asc">Sort: Name (A-Z)</option>
+            <option value="name-desc">Sort: Name (Z-A)</option>
+            <option value="city">Sort: City (A-Z)</option>
+          </select>
+          <button
+            type="button"
+            onClick={() => exportToCSV(customers, 'customers-report')}
+            className="btn btn-secondary"
+            style={{ padding: '8px 14px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            title="Export filtered customers to CSV"
+          >
+            <Download size={14} />
+            <span>Export CSV</span>
+          </button>
           <button
             type="button"
             onClick={() => setIsAddOpen(!isAddOpen)}

@@ -23,6 +23,8 @@ export default function UserChat({ user }) {
   const [previewImage, setPreviewImage] = useState(null);
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
+  const prevMsgCountRef = useRef(0);
+  const hasInitialScrolledRef = useRef(false);
   useEffect(() => {
     const handleDocClick = (e) => {
       const target = e.target;
@@ -49,6 +51,22 @@ export default function UserChat({ user }) {
 
   // merge messages
   const mergeMessages = (prevList, incomingList) => {
+    let custDelMsgs = [];
+    let custClearedAt = 0;
+    try {
+      custDelMsgs = JSON.parse(localStorage.getItem(`cust_del_msgs_${candidateEmail}`) || '[]');
+      custClearedAt = Number(localStorage.getItem(`cust_chat_cleared_${candidateEmail}`) || 0);
+    } catch (e) {}
+    const isCustDeleted = (m) => {
+      if (!m) return true;
+      if (m.deletedForCustomer) return true;
+      if (m.id && custDelMsgs.includes(m.id)) return true;
+      if (m._id && custDelMsgs.includes(m._id)) return true;
+      if (custClearedAt && (m.createdAt || 0) <= custClearedAt) return true;
+      return false;
+    };
+    prevList = prevList.filter((m) => !isCustDeleted(m));
+    incomingList = incomingList.filter((m) => !isCustDeleted(m));
     const map = new Map();
     // old messages
     prevList.forEach((m) => {
@@ -188,6 +206,19 @@ export default function UserChat({ user }) {
   }, [candidateEmail]);
 
   useEffect(() => {
+    const container = scrollRef.current?.parentElement;
+    if (container) {
+      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 120;
+      const isCountIncreased = messages.length > (prevMsgCountRef.current || 0);
+      const isInitial = !hasInitialScrolledRef.current;
+      prevMsgCountRef.current = messages.length;
+
+      if (isInitial || (isCountIncreased && isNearBottom)) {
+        hasInitialScrolledRef.current = true;
+        container.scrollTop = container.scrollHeight;
+      }
+      return;
+    }
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: 'smooth' });
     }
@@ -272,6 +303,11 @@ export default function UserChat({ user }) {
     };
 
     setMessages((prev) => mergeMessages(prev, [{ ...newMsgData, id: `local_${createdAt}` }]));
+    setTimeout(() => {
+      if (scrollRef.current?.parentElement) {
+        scrollRef.current.parentElement.scrollTop = scrollRef.current.parentElement.scrollHeight;
+      }
+    }, 40);
 
     try {
       const res = await fetch('http://localhost:5000/api/messages', {
@@ -318,6 +354,29 @@ export default function UserChat({ user }) {
 
   // delete message
   const handleDeleteMessage = async (msgId) => {
+    if (!msgId) return;
+    setMessages((prev) => prev.filter((m) => m.id !== msgId && m._id !== msgId));
+    try {
+      const key = `cust_del_msgs_${candidateEmail}`;
+      const existing = JSON.parse(localStorage.getItem(key) || '[]');
+      if (!existing.includes(msgId)) {
+        existing.push(msgId);
+        localStorage.setItem(key, JSON.stringify(existing));
+      }
+    } catch (e) {}
+    try {
+      fetch(`http://localhost:5000/api/messages/${msgId}?role=customer`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: 'customer' })
+      }).catch(() => {});
+    } catch (e) {}
+    if (db && !msgId.startsWith('local_')) {
+      try {
+        updateDoc(doc(db, 'chats', msgId), { deletedForCustomer: true }).catch(() => {});
+      } catch (e) {}
+    }
+    return;
     if (!msgId) return;
     setMessages((prev) => prev.filter((m) => m.id !== msgId));
 
@@ -384,6 +443,30 @@ export default function UserChat({ user }) {
   // delete chat
   const handleDeleteChat = async () => {
     if (!window.confirm('Are you sure you want to delete this chat history?')) return;
+    const clearTime = Date.now();
+    try {
+      localStorage.setItem(`cust_chat_cleared_${candidateEmail}`, String(clearTime));
+    } catch (e) {}
+    setMessages([]);
+    try {
+      fetch(`http://localhost:5000/api/messages?email=${encodeURIComponent(candidateEmail)}&role=customer`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: 'customer' })
+      }).catch(() => {});
+    } catch (e) {}
+    if (db && candidateEmail) {
+      try {
+        getDocs(query(collection(db, 'chats'), where('candidateEmail', '==', candidateEmail)))
+          .then((snap) => {
+            snap.docs.forEach((d) => {
+              updateDoc(doc(db, 'chats', d.id), { deletedForCustomer: true }).catch(() => {});
+            });
+          })
+          .catch(() => {});
+      } catch (e) {}
+    }
+    return;
     setMessages([]);
 
     try {

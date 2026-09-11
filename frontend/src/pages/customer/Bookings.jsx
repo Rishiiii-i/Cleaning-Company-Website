@@ -1,5 +1,7 @@
 import React from 'react';
 import { Calendar, CheckCircle, Shield, Search, Clock } from 'lucide-react';
+import { Download } from 'lucide-react';
+import { exportToCSV } from '../../utils/export';
 // import staff user icon
 import { User as StaffIcon } from 'lucide-react';
 import './Bookings.css';
@@ -20,6 +22,8 @@ export default function CustomerBookings({
   formatDate,
   handlePayment
 }) {
+  const [statusFilter, setStatusFilter] = React.useState('all');
+  activeBookings = (activeBookings || []).filter((b) => statusFilter === 'all' || b.status === statusFilter);
   return (
     <div className="dashboard-panel">
       <div className="booking-layout-grid">
@@ -131,6 +135,42 @@ export default function CustomerBookings({
         {/* view current booking statuses list */}
         <div className="bookings-list-cards">
           <div className="list-title-row"><div><p className="section-kicker">Your schedule</p><h3>Active service requests</h3></div><span>{activeBookings.length} active</span></div>
+          <div className="customer-booking-filter-tabs">
+            <div className="filter-pills-row">
+              {['all', 'scheduled', 'completed', 'cancelled'].map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  className={`filter-pill-btn ${statusFilter === tab ? 'active' : ''}`}
+                  onClick={() => setStatusFilter(tab)}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="btn-customer-export-csv"
+              onClick={() => {
+                const exportData = activeBookings.map((b) => ({
+                  'Booking ID': b.id || b._id,
+                  'Service': getServiceInfo(b.serviceType)?.name || b.serviceType,
+                  'Price (INR)': b.price,
+                  'Date': b.date,
+                  'Time': b.time,
+                  'Status': b.status,
+                  'Payment': b.paymentStatus || 'unpaid',
+                  'Staff': b.assignedStaff || 'Unassigned',
+                  'Address': b.address
+                }));
+                exportToCSV(exportData, `my-bookings-${new Date().toISOString().slice(0, 10)}.csv`);
+              }}
+              title="Export my bookings to CSV"
+            >
+              <Download size={14} />
+              <span>Export CSV</span>
+            </button>
+          </div>
           <label className="booking-search-field">
             <Search size={17} />
             <input value={bookingSearch} onChange={(e) => setBookingSearch(e.target.value)} placeholder="Search by service or booking ID" />

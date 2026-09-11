@@ -1,4 +1,6 @@
 import React from 'react';
+import { Download } from 'lucide-react';
+import { exportToCSV } from '../../utils/export';
 import './Bookings.css';
 
 export default function AdminBookings({
@@ -12,6 +14,15 @@ export default function AdminBookings({
   const [search, setSearch] = React.useState('');
   // status filter text
   const [statusFilter, setStatusFilter] = React.useState('all');
+  const [serviceFilter, setServiceFilter] = React.useState('all');
+  const [sortBy, setSortBy] = React.useState('newest');
+  const [optimisticStatus, setOptimisticStatus] = React.useState({});
+  const onStatusChangeOptimistic = (bId, newStatus) => {
+    setOptimisticStatus((prev) => ({ ...prev, [bId]: newStatus }));
+    if (typeof handleStatusChange === 'function') {
+      handleStatusChange(bId, newStatus);
+    }
+  };
   // safe fallback for staff and services
   staff = staff || [];
   services = services || [];
@@ -24,6 +35,21 @@ export default function AdminBookings({
     const matchSearch = nameStr.includes(q) || idStr.includes(q);
     const matchStatus = statusFilter === 'all' || b.status === statusFilter;
     return matchSearch && matchStatus;
+  });
+  bookings = bookings.map((b) => ({
+    ...b,
+    status: optimisticStatus[b.id || b._id] || b.status
+  })).filter((b) => {
+    if (serviceFilter === 'all') return true;
+    const sName = (services.find(s => s.id === b.serviceType)?.name || b.serviceType || '').toLowerCase();
+    return sName.includes(serviceFilter.toLowerCase()) || (b.serviceType || '').toLowerCase() === serviceFilter.toLowerCase();
+  });
+  bookings.sort((a, b) => {
+    if (sortBy === 'newest') return new Date(b.date || 0) - new Date(a.date || 0);
+    if (sortBy === 'oldest') return new Date(a.date || 0) - new Date(b.date || 0);
+    if (sortBy === 'price-high') return (b.price || 0) - (a.price || 0);
+    if (sortBy === 'price-low') return (a.price || 0) - (b.price || 0);
+    return 0;
   });
   return (
     <div className="dashboard-panel">
@@ -52,6 +78,52 @@ export default function AdminBookings({
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
+          <select
+            value={serviceFilter}
+            onChange={(e) => setServiceFilter(e.target.value)}
+            className="booking-status-filter"
+            title="Filter by service"
+          >
+            <option value="all">All Services</option>
+            {services.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="booking-status-filter"
+            title="Sort bookings"
+          >
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="price-high">Price: High to Low</option>
+            <option value="price-low">Price: Low to High</option>
+          </select>
+          <button
+            type="button"
+            className="btn-export-csv"
+            onClick={() => {
+              const exportData = bookings.map((b) => ({
+                'Booking ID': b.id || b._id,
+                'Customer': b.customerName || b.userEmail,
+                'Email': b.email || b.userEmail,
+                'Service': services.find(s => s.id === b.serviceType)?.name || b.serviceType,
+                'Price (INR)': b.price,
+                'Date': b.date,
+                'Time': b.time,
+                'Status': b.status,
+                'Payment': b.paymentStatus || 'unpaid',
+                'Staff': b.assignedStaff || 'Unassigned',
+                'Address': b.address
+              }));
+              exportToCSV(exportData, `bookings-${new Date().toISOString().slice(0, 10)}.csv`);
+            }}
+            title="Export filtered bookings to CSV"
+          >
+            <Download size={15} />
+            <span>Export CSV</span>
+          </button>
         </div>
 
         {bookings.length > 0 ? (

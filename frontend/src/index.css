@@ -258,3 +258,45 @@ ul {
   box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
   animation: bell-pulse 2s infinite;
 }
+
+button, input, select, textarea, .btn, .service-card, .history-booking-card, .booking-card {
+  transition: var(--transition);
+}
+
+.btn:active {
+  transform: scale(0.97) !important;
+}
+
+.interactive-hover-lift {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+}
+.interactive-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.admin-data-table tbody tr,
+.payments-data-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.admin-data-table tbody tr:hover,
+.payments-data-table tbody tr:hover {
+  background-color: rgba(2, 132, 199, 0.04);
+}
+
+:root.dark .admin-data-table tbody tr:hover,
+:root.dark .payments-data-table tbody tr:hover {
+  background-color: rgba(56, 189, 248, 0.08);
+}
+
+.admin-table-wrapper,
+.bookings-table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius);
+  position: relative;
+}
+
+
